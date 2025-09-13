@@ -17,7 +17,7 @@ export const ProcessNode = ({ data, selected }) => {
       }}
     >
       <Handle type="target" position={Position.Top} />
-      <div style={{ fontWeight: "bold", fontSize: "12px" }}>
+      <div style={{ fontWeight: "bold", fontSize: "12px", color: "black" }}>
         ⚙️ {data.label}
       </div>
       <Handle type="source" position={Position.Bottom} />
@@ -53,6 +53,7 @@ export const DecisionNode = ({ data, selected }) => {
           fontSize: "12px",
           textAlign: "center",
           maxWidth: "60px",
+          color: "black",
         }}
       >
         💎 {data.label}
@@ -143,7 +144,7 @@ export const DatabaseNode = ({ data, selected }) => {
           fontWeight: "bold",
           fontSize: "12px",
           textAlign: "center",
-          color: selected ? "#2e7d32" : "#4caf50",
+          color: "black",
           padding: "2px 6px",
           borderRadius: "4px",
         }}
@@ -171,7 +172,7 @@ export const CloudNode = ({ data, selected }) => {
       }}
     >
       <Handle type="target" position={Position.Top} />
-      <div style={{ fontWeight: "bold", fontSize: "12px" }}>
+      <div style={{ fontWeight: "bold", fontSize: "12px", color: "black" }}>
         ☁️ {data.label}
       </div>
       <Handle type="source" position={Position.Bottom} />
@@ -201,7 +202,7 @@ export const InputNode = ({ data, selected }) => {
           fontSize: "12px",
           textAlign: "center",
           maxWidth: "60px",
-          color: selected ? "#2196f3" : "#64b5f6",
+          color: "black",
         }}
       >
         🔵 {data.label}
@@ -234,7 +235,7 @@ export const OutputNode = ({ data, selected }) => {
           fontSize: "12px",
           textAlign: "center",
           maxWidth: "60px",
-          color: selected ? "#e91e63" : "#f48fb1",
+          color: "black",
         }}
       >
         🔴 {data.label}
@@ -265,7 +266,7 @@ export const GroupNode = ({ data, selected }) => {
           left: "12px",
           fontWeight: "bold",
           fontSize: "12px",
-          color: "#666",
+          color: "black",
         }}
       >
         📦 {data.label}
