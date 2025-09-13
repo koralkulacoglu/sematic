@@ -249,9 +249,12 @@ const DiagramCanvas = ({
       <div
         style={{
           width: "100%",
-          height: "600px",
-          border: "1px solid #ddd",
-          borderRadius: "8px",
+          height: "100%",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
         }}
       >
         <ReactFlow

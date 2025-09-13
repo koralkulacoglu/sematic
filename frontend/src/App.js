@@ -97,112 +97,118 @@ function App() {
   };
 
   return (
-    <div className="App">
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px" }}>
-        <div style={{ marginBottom: "20px" }}>
-          <h1 style={{ marginBottom: "10px", textAlign: "center" }}>
-            Diagram Builder
-          </h1>
-          <p
-            style={{ color: "#666", textAlign: "center", marginBottom: "20px" }}
-          >
-            Create diagrams using the tools on the right. Add AI editing once
-            you have some nodes.
-          </p>
-        </div>
-
-        {/* Main Canvas - Always visible */}
-        <div style={{ marginBottom: "20px" }}>
-          {/* Streaming Status */}
-          {streamingStatus && (
-            <div
-              style={{
-                backgroundColor: "rgba(227, 242, 253, 0.9)",
-                color: "#1976d2",
-                padding: "8px 12px",
-                borderRadius: "4px",
-                marginBottom: "8px",
-                border: "1px solid #bbdefb",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                fontSize: "14px",
-                position: "relative",
-                zIndex: 1000,
-              }}
-            >
-              <div
-                style={{
-                  width: "16px",
-                  height: "16px",
-                  border: "2px solid #1976d2",
-                  borderTop: "2px solid transparent",
-                  borderRadius: "50%",
-                  animation: "spin 1s linear infinite",
-                }}
-              ></div>
-              <span>{streamingStatus}</span>
-            </div>
-          )}
-
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* Top Header with Tools */}
+      <div
+        style={{
+          height: "60px",
+          backgroundColor: "#f8f9fa",
+          borderBottom: "1px solid #ddd",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 20px",
+          position: "relative",
+          zIndex: 1000,
+        }}
+      >
+        <h1 style={{ margin: 0, fontSize: "20px", color: "#333" }}>
+          Diagram Builder
+        </h1>
+        
+        {/* Streaming Status */}
+        {streamingStatus && (
           <div
             style={{
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              backgroundColor: "rgba(227, 242, 253, 0.9)",
+              color: "#1976d2",
+              padding: "6px 12px",
+              borderRadius: "4px",
+              border: "1px solid #bbdefb",
               display: "flex",
-              justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: "10px",
+              gap: "8px",
+              fontSize: "12px",
             }}
           >
-            <h3 style={{ margin: 0 }}>Your Diagram</h3>
-            <div style={{ display: "flex", gap: "8px" }}>
-              {nodes.length > 0 && (
-                <>
-                  <button
-                    onClick={exportDiagram}
-                    style={{
-                      padding: "8px 16px",
-                      backgroundColor: "#17a2b8",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Export JSON
-                  </button>
-                  <button
-                    onClick={clearDiagram}
-                    style={{
-                      padding: "8px 16px",
-                      backgroundColor: "#6c757d",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Clear All
-                  </button>
-                </>
-              )}
-            </div>
+            <div
+              style={{
+                width: "12px",
+                height: "12px",
+                border: "2px solid #1976d2",
+                borderTop: "2px solid transparent",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+              }}
+            ></div>
+            <span>{streamingStatus}</span>
           </div>
+        )}
 
-          <DiagramCanvas
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={handleNodesChange}
-            onEdgesChange={handleEdgesChange}
-          />
+        {/* Top Right Tools */}
+        <div style={{ display: "flex", gap: "8px" }}>
+          {nodes.length > 0 && (
+            <>
+              <button
+                onClick={exportDiagram}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#17a2b8",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                }}
+              >
+                Export JSON
+              </button>
+              <button
+                onClick={clearDiagram}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#6c757d",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                }}
+              >
+                Clear All
+              </button>
+            </>
+          )}
         </div>
+      </div>
 
-        {/* AI Editing Panel - Only show when there are nodes */}
-        {(nodes.length > 0 || edges.length > 0) && (
-          <div style={{ marginBottom: "20px" }}>
+      {/* Main Content Area */}
+      <div style={{ flex: 1, display: "flex" }}>
+        {/* Left Sidebar - Chat */}
+        <div
+          style={{
+            width: "350px",
+            backgroundColor: "#ffffff",
+            borderRight: "1px solid #ddd",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "20px",
+              flex: 1,
+              overflowY: "auto",
+            }}
+          >
             <PromptInput
               onGenerate={handleGenerate}
               isGenerating={isGenerating}
-              hasExistingDiagram={true}
+              hasExistingDiagram={nodes.length > 0}
             />
 
             {error && (
@@ -214,6 +220,7 @@ function App() {
                   borderRadius: "4px",
                   marginTop: "10px",
                   border: "1px solid #f5c6cb",
+                  fontSize: "12px",
                 }}
               >
                 <strong>Error:</strong> {error}
@@ -229,48 +236,24 @@ function App() {
                     padding: "10px",
                     borderRadius: "4px",
                     border: "1px solid #c3e6cb",
+                    fontSize: "12px",
                   }}
                 >
-                  <strong>Last AI edit:</strong> "{lastPrompt}"
+                  <strong>Last edit:</strong> "{lastPrompt}"
                 </div>
               </div>
             )}
           </div>
-        )}
+        </div>
 
-        {/* Instructions */}
-        <div style={{ marginTop: "20px" }}>
-          <h3>How to Use:</h3>
-          <ul style={{ textAlign: "left", color: "#666" }}>
-            <li>
-              <strong>Add nodes:</strong> Use the "Add Node" dropdown in the
-              diagram tools (top-right)
-            </li>
-            <li>
-              <strong>Connect nodes:</strong> Drag from a node's handle to
-              another node
-            </li>
-            <li>
-              <strong>Change edge style:</strong> Select an edge type before
-              connecting nodes
-            </li>
-            <li>
-              <strong>Move nodes:</strong> Click and drag nodes to reposition
-              them
-            </li>
-            <li>
-              <strong>Delete:</strong> Select nodes/edges and click "Delete
-              Selected"
-            </li>
-            <li>
-              <strong>AI editing:</strong> Once you have nodes, use the AI
-              editor below to modify your diagram
-            </li>
-            <li>
-              <strong>Navigate:</strong> Use the minimap and zoom controls for
-              large diagrams
-            </li>
-          </ul>
+        {/* Right Area - Full Screen Diagram */}
+        <div style={{ flex: 1, position: "relative" }}>
+          <DiagramCanvas
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={handleNodesChange}
+            onEdgesChange={handleEdgesChange}
+          />
         </div>
       </div>
     </div>

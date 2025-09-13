@@ -37,57 +37,32 @@ const PromptInput = ({
   };
 
   return (
-    <div
-      style={{
-        marginBottom: "20px",
-        ...(hasExistingDiagram && {
-          backgroundColor: "#f8f9fa",
-          border: "1px solid #ddd",
-          borderRadius: "8px",
-          padding: "20px",
-        }),
-      }}
-    >
-      <div style={{ marginBottom: "20px" }}>
-        <h2 style={{ marginBottom: "10px" }}>
-          {hasExistingDiagram ? "🤖 AI Diagram Editor" : "AI Diagram Generator"}
-        </h2>
-        <p style={{ color: "#666", marginBottom: "15px" }}>
-          {hasExistingDiagram
-            ? "Describe how you want to modify your existing diagram, and AI will update it for you."
-            : "Enter a description and let AI generate a diagram for you. You can then edit it manually."}
-        </p>
+    <div>
+      <div style={{ marginBottom: "16px" }}>
+        <h3 style={{ marginBottom: "8px", fontSize: "16px", color: "#333" }}>
+          {hasExistingDiagram ? "🤖 AI Editor" : "🤖 AI Generator"}
+        </h3>
 
         {/* Prompt Input */}
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "15px" }}>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "5px",
-                fontWeight: "bold",
-              }}
-            >
-              {hasExistingDiagram
-                ? "Describe your changes:"
-                : "Describe your diagram:"}
-            </label>
+          <div style={{ marginBottom: "12px" }}>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder={
                 hasExistingDiagram
-                  ? "e.g., Add error handling steps, include security validation, add payment processing..."
-                  : "e.g., Create a flowchart for user authentication process..."
+                  ? "Describe your changes..."
+                  : "Describe your diagram..."
               }
-              rows={4}
+              rows={3}
               style={{
                 width: "100%",
                 padding: "8px",
                 border: "1px solid #ddd",
                 borderRadius: "4px",
-                fontSize: "14px",
+                fontSize: "12px",
                 resize: "vertical",
+                boxSizing: "border-box",
               }}
             />
           </div>
@@ -100,12 +75,13 @@ const PromptInput = ({
                 !prompt.trim() || isGenerating ? "#ccc" : "#28a745",
               color: "white",
               border: "none",
-              padding: "10px 20px",
+              padding: "8px 16px",
               borderRadius: "4px",
               cursor:
                 !prompt.trim() || isGenerating ? "not-allowed" : "pointer",
-              fontSize: "14px",
+              fontSize: "12px",
               fontWeight: "bold",
+              width: "100%",
             }}
           >
             {isGenerating
@@ -121,21 +97,22 @@ const PromptInput = ({
 
       {/* Example Prompts */}
       <div>
-        <h3 style={{ fontSize: "16px", marginBottom: "10px" }}>
-          {hasExistingDiagram ? "Example Edits:" : "Example Prompts:"}
-        </h3>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-          {examplePrompts.map((example, index) => (
+        <h4 style={{ fontSize: "12px", marginBottom: "8px", color: "#666" }}>
+          Examples:
+        </h4>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          {examplePrompts.slice(0, 3).map((example, index) => (
             <button
               key={index}
               onClick={() => selectExamplePrompt(example)}
               style={{
-                padding: "6px 12px",
+                padding: "6px 8px",
                 backgroundColor: "#f8f9fa",
                 border: "1px solid #ddd",
-                borderRadius: "20px",
+                borderRadius: "4px",
                 cursor: "pointer",
-                fontSize: "12px",
+                fontSize: "10px",
+                textAlign: "left",
                 transition: "background-color 0.2s",
               }}
               onMouseEnter={(e) => (e.target.style.backgroundColor = "#e9ecef")}
