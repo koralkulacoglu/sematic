@@ -58,6 +58,15 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Override for custom input and output nodes */
+.react-flow__node-input,
+.react-flow__node-output {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
 .react-flow__node-default.selected {
   border-color: #28a745;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);

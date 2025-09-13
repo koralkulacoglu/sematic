@@ -17,7 +17,7 @@ export const ProcessNode = ({ data, selected }) => {
       }}
     >
       <Handle type="target" position={Position.Top} />
-      <div style={{ fontWeight: "bold", fontSize: "14px" }}>
+      <div style={{ fontWeight: "bold", fontSize: "12px" }}>
         ⚙️ {data.label}
       </div>
       <Handle type="source" position={Position.Bottom} />
@@ -72,37 +72,85 @@ export const DecisionNode = ({ data, selected }) => {
 };
 
 export const DatabaseNode = ({ data, selected }) => {
+  const borderColor = selected ? "#4caf50" : "#a5d6a7";
+  const fillColor = selected ? "#e8f5e8" : "#f1f8e9";
+  
   return (
     <div
       style={{
-        padding: "12px 20px",
-        backgroundColor: "#e8f5e8",
-        border: `2px solid ${selected ? "#4caf50" : "#a5d6a7"}`,
-        borderRadius: "8px 8px 0 0",
-        minWidth: "100px",
-        textAlign: "center",
         position: "relative",
+        width: "100px",
+        height: "80px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         boxShadow: selected ? "0 0 0 2px rgba(76, 175, 80, 0.3)" : "none",
       }}
     >
       <Handle type="target" position={Position.Top} />
-      <div style={{ fontWeight: "bold", fontSize: "14px" }}>
-        🗄️ {data.label}
-      </div>
-      {/* Database bottom part */}
+      
+      {/* Main cylinder body */}
       <div
         style={{
           position: "absolute",
-          bottom: "-8px",
+          top: "12px",
           left: "0",
           right: "0",
-          height: "8px",
-          backgroundColor: "#e8f5e8",
-          border: `2px solid ${selected ? "#4caf50" : "#a5d6a7"}`,
+          height: "56px",
+          backgroundColor: fillColor,
+          border: `2px solid ${borderColor}`,
           borderTop: "none",
-          borderRadius: "0 0 8px 8px",
+          borderBottom: "none",
         }}
       />
+      
+      {/* Top ellipse */}
+      <div
+        style={{
+          position: "absolute",
+          top: "0",
+          left: "0",
+          right: "0",
+          height: "24px",
+          backgroundColor: fillColor,
+          border: `2px solid ${borderColor}`,
+          borderRadius: "50px 50px 50px 50px / 12px 12px 12px 12px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      />
+      
+      {/* Bottom ellipse */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "0",
+          left: "0",
+          right: "0",
+          height: "24px",
+          backgroundColor: fillColor,
+          border: `2px solid ${borderColor}`,
+          borderRadius: "50px 50px 50px 50px / 12px 12px 12px 12px",
+        }}
+      />
+      
+      {/* Text content */}
+      <div
+        style={{
+          position: "relative",
+          zIndex: 2,
+          fontWeight: "bold",
+          fontSize: "12px",
+          textAlign: "center",
+          color: selected ? "#2e7d32" : "#4caf50",
+          padding: "2px 6px",
+          borderRadius: "4px",
+        }}
+      >
+        🗄️ {data.label}
+      </div>
+      
       <Handle type="source" position={Position.Bottom} />
     </div>
   );
@@ -123,7 +171,7 @@ export const CloudNode = ({ data, selected }) => {
       }}
     >
       <Handle type="target" position={Position.Top} />
-      <div style={{ fontWeight: "bold", fontSize: "14px" }}>
+      <div style={{ fontWeight: "bold", fontSize: "12px" }}>
         ☁️ {data.label}
       </div>
       <Handle type="source" position={Position.Bottom} />
@@ -137,7 +185,7 @@ export const InputNode = ({ data, selected }) => {
       style={{
         width: "80px",
         height: "80px",
-        backgroundColor: "#e3f2fd",
+        backgroundColor: selected ? "#e3f2fd" : "#f3f9ff",
         border: `3px solid ${selected ? "#2196f3" : "#64b5f6"}`,
         borderRadius: "50%",
         display: "flex",
@@ -153,6 +201,7 @@ export const InputNode = ({ data, selected }) => {
           fontSize: "12px",
           textAlign: "center",
           maxWidth: "60px",
+          color: selected ? "#2196f3" : "#64b5f6",
         }}
       >
         🔵 {data.label}
@@ -168,7 +217,7 @@ export const OutputNode = ({ data, selected }) => {
       style={{
         width: "80px",
         height: "80px",
-        backgroundColor: "#fce4ec",
+        backgroundColor: selected ? "#fce4ec" : "#fff0f5",
         border: `3px solid ${selected ? "#e91e63" : "#f48fb1"}`,
         borderRadius: "50%",
         display: "flex",
@@ -185,6 +234,7 @@ export const OutputNode = ({ data, selected }) => {
           fontSize: "12px",
           textAlign: "center",
           maxWidth: "60px",
+          color: selected ? "#e91e63" : "#f48fb1",
         }}
       >
         🔴 {data.label}
