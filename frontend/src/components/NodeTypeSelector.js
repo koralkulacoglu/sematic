@@ -77,17 +77,6 @@ const NodeTypeSelector = ({
         borderRadius: "20px",
       },
     },
-    {
-      type: "group",
-      label: "Group",
-      icon: "📦",
-      description: "Group container",
-      style: {
-        backgroundColor: "#f9f9f9",
-        border: "2px dashed #999",
-        borderRadius: "8px",
-      },
-    },
   ];
 
   return (

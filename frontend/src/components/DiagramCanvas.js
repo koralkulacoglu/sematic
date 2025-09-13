@@ -176,7 +176,6 @@ const DiagramCanvas = ({
           decision: "Decision",
           database: "Database",
           cloud: "Cloud Service",
-          group: "Group",
         };
 
         const newNode = {
@@ -374,8 +373,6 @@ const DiagramCanvas = ({
                   return "#4caf50";
                 case "cloud":
                   return "#03a9f4";
-                case "group":
-                  return "#666";
                 default:
                   return "#ccc";
               }

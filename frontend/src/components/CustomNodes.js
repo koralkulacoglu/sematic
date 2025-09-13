@@ -244,41 +244,6 @@ export const OutputNode = ({ data, selected }) => {
   );
 };
 
-export const GroupNode = ({ data, selected }) => {
-  return (
-    <div
-      style={{
-        padding: "20px",
-        backgroundColor: "#f9f9f9",
-        border: `2px dashed ${selected ? "#666" : "#999"}`,
-        borderRadius: "8px",
-        minWidth: "150px",
-        minHeight: "100px",
-        textAlign: "center",
-        position: "relative",
-        boxShadow: selected ? "0 0 0 2px rgba(102, 102, 102, 0.3)" : "none",
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          top: "8px",
-          left: "12px",
-          fontWeight: "bold",
-          fontSize: "12px",
-          color: "black",
-        }}
-      >
-        📦 {data.label}
-      </div>
-      <Handle type="target" position={Position.Top} />
-      <Handle type="source" position={Position.Bottom} />
-      <Handle type="source" position={Position.Right} />
-      <Handle type="target" position={Position.Left} />
-    </div>
-  );
-};
-
 // Node type mapping
 export const nodeTypes = {
   process: ProcessNode,
@@ -287,5 +252,4 @@ export const nodeTypes = {
   cloud: CloudNode,
   input: InputNode,
   output: OutputNode,
-  group: GroupNode,
 };
