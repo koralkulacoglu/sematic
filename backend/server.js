@@ -26,10 +26,10 @@ class StreamingDiagramService {
 
   initialize(apiKey) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    this.model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   }
 
-  async streamDiagramEdits(prompt, existingDiagram, socket) {
+  async streamDiagramEdits(prompt, existingDiagram, socket, imageData = null) {
     if (!this.model) {
       socket.emit("error", { message: "Gemini API not initialized" });
       return;
@@ -41,7 +41,50 @@ class StreamingDiagramService {
         data: { message: "Analyzing your diagram..." },
       });
 
-      const enhancedPrompt = `
+      // Choose the appropriate model and prepare content
+      let content;
+
+      if (imageData) {
+        // For vision requests with image
+        content = [
+          {
+            text: `${prompt}
+
+You are a diagram editing AI that responds with a series of commands to modify a ReactFlow diagram.
+You must respond ONLY with a series of JSON commands, one per line, no other text.
+
+Current diagram: ${JSON.stringify(existingDiagram)}
+
+Available commands:
+1. {"type": "status", "data": {"message": "Description of current step"}}
+2. {"type": "add_node", "data": {"id": "unique_id", "nodeType": "process|input|output|decision|database|cloud|group|default", "position": {"x": 100, "y": 200}, "label": "Node Label"}}
+3. {"type": "update_node", "data": {"id": "existing_id", "changes": {"position": {"x": 100, "y": 200}, "label": "New Label", "nodeType": "new_type"}}}
+4. {"type": "delete_node", "data": {"id": "node_to_delete"}}
+5. {"type": "add_edge", "data": {"id": "edge_id", "source": "source_node_id", "target": "target_node_id", "edgeType": "default|straight|step|smoothstep|bezier|simplebezier"}}
+6. {"type": "update_edge", "data": {"id": "existing_edge_id", "changes": {"edgeType": "new_type"}}}
+7. {"type": "delete_edge", "data": {"id": "edge_to_delete"}}
+8. {"type": "complete", "data": {"message": "Edit completed successfully"}}
+
+Guidelines:
+- Start with a status message describing what you'll do
+- Make changes step by step with status updates
+- Use appropriate node types (input=start, output=end, process=action, decision=condition, etc.)
+- Position new nodes logically (spread them out, avoid overlaps)
+- Always end with a "complete" command
+- Only modify what's requested, preserve other elements
+
+Respond with commands only, one JSON object per line:`
+          },
+          {
+            inlineData: {
+              mimeType: "image/png",
+              data: imageData
+            }
+          }
+        ];
+      } else {
+        // For text-only requests
+        content = `
 You are a diagram editing AI that responds with a series of commands to modify a ReactFlow diagram.
 You must respond ONLY with a series of JSON commands, one per line, no other text.
 
@@ -68,8 +111,9 @@ Guidelines:
 User request: ${prompt}
 
 Respond with commands only, one JSON object per line:`;
+      }
 
-      const result = await this.model.generateContentStream(enhancedPrompt);
+      const result = await this.model.generateContentStream(content);
 
       let buffer = "";
 
@@ -244,10 +288,10 @@ io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
 
   socket.on("stream_diagram_edit", async (data) => {
-    const { prompt, existingDiagram } = data;
+    const { prompt, existingDiagram, imageData } = data;
 
     try {
-      await diagramService.streamDiagramEdits(prompt, existingDiagram, socket);
+      await diagramService.streamDiagramEdits(prompt, existingDiagram, socket, imageData);
     } catch (error) {
       socket.emit("error", { message: error.message });
     }

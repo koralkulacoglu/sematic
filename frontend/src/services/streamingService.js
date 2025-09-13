@@ -32,6 +32,16 @@ class StreamingDiagramService {
       return;
     }
 
+    // Check if apiKey is actually image data (base64 string)
+    let imageData = null;
+    let actualApiKey = apiKey;
+    
+    if (typeof apiKey === 'string' && apiKey.length > 100 && !apiKey.startsWith('AIza')) {
+      // This looks like base64 image data, not an API key
+      imageData = apiKey;
+      actualApiKey = null; // Will use server's API key
+    }
+
     // Set up event listeners
     const handleCommand = (command) => {
       if (callbacks.onCommand) {
@@ -68,8 +78,9 @@ class StreamingDiagramService {
     // Send the edit request
     this.socket.emit("stream_diagram_edit", {
       prompt,
-      apiKey,
+      apiKey: actualApiKey,
       existingDiagram,
+      imageData, // Add image data for vision requests
     });
   }
 

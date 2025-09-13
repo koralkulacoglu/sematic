@@ -43,8 +43,32 @@ function App() {
 
     try {
       const existingDiagram = { nodes, edges };
+      let imageData = null;
 
-      streamingService.streamDiagramEdit(prompt, null, existingDiagram, {
+      // If there are nodes, try to capture the minimap
+      if (nodes.length > 0 && window.captureDiagramMinimap) {
+        try {
+          setStreamingStatus("Capturing diagram...");
+          const { blob, colorContext } = await window.captureDiagramMinimap();
+          
+          // Convert blob to base64
+          const reader = new FileReader();
+          imageData = await new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+
+          // Add color context to the prompt
+          prompt = `${colorContext}\n\nUser request: ${prompt}`;
+        } catch (captureError) {
+          console.log("Could not capture minimap, proceeding without image:", captureError);
+        }
+      }
+
+      setStreamingStatus("Analyzing with AI...");
+
+      streamingService.streamDiagramEdit(prompt, imageData, existingDiagram, {
         onCommand: (command) => {
           commandProcessor.processCommand(command);
         },

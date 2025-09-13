@@ -8,6 +8,7 @@ import ReactFlow, {
   addEdge,
   Panel,
   ReactFlowProvider,
+  useReactFlow,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { nodeTypes } from "./CustomNodes";
@@ -256,133 +257,209 @@ const DiagramCanvas = ({
           bottom: 0,
         }}
       >
-        <ReactFlow
+        <DiagramFlowInner
           nodes={nodes}
           edges={edges}
           onNodesChange={handleNodesChange}
           onEdgesChange={handleEdgesChange}
           onConnect={onConnect}
-          nodeTypes={nodeTypes}
-          connectionMode="loose"
-          fitView
-          fitViewOptions={{ padding: 0.2 }}
-          attributionPosition="bottom-left"
-        >
-          {/* Empty state overlay */}
-          {nodes.length === 0 && (
-            <div
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                textAlign: "center",
-                color: "#666",
-                zIndex: 10,
-                pointerEvents: "none",
-              }}
-            >
-              <div style={{ fontSize: "48px", marginBottom: "16px" }}>📊</div>
-              <h3 style={{ margin: "0 0 8px 0", color: "#333" }}>
-                Start Building Your Diagram
-              </h3>
-              <p style={{ margin: "0", fontSize: "14px" }}>
-                Use the "Add Node" button in the top-right corner to get started
-              </p>
-            </div>
-          )}
-          <Panel position="top-right">
-            <div
-              style={{
-                display: "flex",
-                gap: "8px",
-                flexDirection: "column",
-                backgroundColor: "white",
-                padding: "12px",
-                borderRadius: "8px",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-                border: "1px solid #ddd",
-              }}
-            >
-              <div
-                style={{
-                  fontWeight: "bold",
-                  fontSize: "14px",
-                  marginBottom: "8px",
-                  color: "#333",
-                }}
-              >
-                Diagram Tools
-              </div>
-
-              <NodeTypeSelector
-                onAddNode={addNode}
-                selectedNodeType={selectedNodeType}
-                onNodeTypeChange={setSelectedNodeType}
-              />
-
-              <EdgeTypeSelector
-                selectedEdgeType={selectedEdgeType}
-                onEdgeTypeChange={setSelectedEdgeType}
-              />
-
-              <button
-                onClick={deleteSelectedNodes}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#dc3545",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
-                <span>🗑️</span>
-                <span>Delete Selected</span>
-              </button>
-
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "#666",
-                  marginTop: "8px",
-                  paddingTop: "8px",
-                  borderTop: "1px solid #eee",
-                }}
-              >
-                💡 Tip: Drag to connect nodes with the selected edge style
-              </div>
-            </div>
-          </Panel>
-          <Controls />
-          <MiniMap
-            nodeColor={(node) => {
-              switch (node.type) {
-                case "input":
-                  return "#2196f3";
-                case "output":
-                  return "#e91e63";
-                case "process":
-                  return "#9c27b0";
-                case "decision":
-                  return "#ff9800";
-                case "database":
-                  return "#4caf50";
-                case "cloud":
-                  return "#03a9f4";
-                default:
-                  return "#ccc";
-              }
-            }}
-            maskColor="rgba(240, 240, 240, 0.6)"
-          />
-          <Background variant="dots" gap={12} size={1} />
-        </ReactFlow>
+          addNode={addNode}
+          deleteSelectedNodes={deleteSelectedNodes}
+          selectedNodeType={selectedNodeType}
+          setSelectedNodeType={setSelectedNodeType}
+          selectedEdgeType={selectedEdgeType}
+          setSelectedEdgeType={setSelectedEdgeType}
+        />
       </div>
     </ReactFlowProvider>
+  );
+};
+
+// Inner component that can use React Flow hooks
+const DiagramFlowInner = ({
+  nodes,
+  edges,
+  onNodesChange,
+  onEdgesChange,
+  onConnect,
+  addNode,
+  deleteSelectedNodes,
+  selectedNodeType,
+  setSelectedNodeType,
+  selectedEdgeType,
+  setSelectedEdgeType,
+}) => {
+  const { fitView } = useReactFlow();
+
+  // Export function to capture minimap for external use
+  window.captureDiagramMinimap = () => {
+    return new Promise((resolve, reject) => {
+      try {
+        // First, fit the view to show all nodes
+        fitView({ padding: 0.2, duration: 0 }); // No animation for immediate effect
+        
+        // Wait a short moment for the view to update and minimap to re-render
+        setTimeout(() => {
+          const minimapCanvas = document.querySelector('.react-flow__minimap canvas');
+          if (!minimapCanvas) {
+            reject(new Error('Could not find minimap canvas'));
+            return;
+          }
+
+          minimapCanvas.toBlob((blob) => {
+            if (blob) {
+              const colorContext = `
+Here's a minimap view of the current React Flow diagram. 
+
+Color Legend:
+- Blue: Input/Start nodes (entry points) 
+- Red: Output/End nodes (exit points)
+- Purple: Process nodes (actions/operations)
+- Orange: Decision nodes (conditions/branching) 
+- Green: Database nodes (data storage)
+- Light blue: Cloud Service nodes (external systems)
+- Gray: Default/General purpose nodes
+
+Current diagram contains ${nodes.length} nodes and ${edges.length} connections.`.trim();
+
+              resolve({ blob, colorContext });
+            } else {
+              reject(new Error('Failed to capture minimap'));
+            }
+          }, 'image/png');
+        }, 100); // Small delay to ensure minimap updates
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+
+  return (
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      onConnect={onConnect}
+      nodeTypes={nodeTypes}
+      connectionMode="loose"
+      fitView
+      fitViewOptions={{ padding: 0.2 }}
+      attributionPosition="bottom-left"
+    >
+      {/* Empty state overlay */}
+      {nodes.length === 0 && (
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            textAlign: "center",
+            color: "#666",
+            zIndex: 10,
+            pointerEvents: "none",
+          }}
+        >
+          <div style={{ fontSize: "48px", marginBottom: "16px" }}>📊</div>
+          <h3 style={{ margin: "0 0 8px 0", color: "#333" }}>
+            Start Building Your Diagram
+          </h3>
+          <p style={{ margin: "0", fontSize: "14px" }}>
+            Use the "Add Node" button in the top-right corner to get started
+          </p>
+        </div>
+      )}
+      <Panel position="top-right">
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            flexDirection: "column",
+            backgroundColor: "white",
+            padding: "12px",
+            borderRadius: "8px",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+            border: "1px solid #ddd",
+          }}
+        >
+          <div
+            style={{
+              fontWeight: "bold",
+              fontSize: "14px",
+              marginBottom: "8px",
+              color: "#333",
+            }}
+          >
+            Diagram Tools
+          </div>
+
+          <NodeTypeSelector
+            onAddNode={addNode}
+            selectedNodeType={selectedNodeType}
+            onNodeTypeChange={setSelectedNodeType}
+          />
+
+          <EdgeTypeSelector
+            selectedEdgeType={selectedEdgeType}
+            onEdgeTypeChange={setSelectedEdgeType}
+          />
+
+          <button
+            onClick={deleteSelectedNodes}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#dc3545",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <span>🗑️</span>
+            <span>Delete Selected</span>
+          </button>
+
+          <div
+            style={{
+              fontSize: "12px",
+              color: "#666",
+              marginTop: "8px",
+              paddingTop: "8px",
+              borderTop: "1px solid #eee",
+            }}
+          >
+            💡 Tip: Drag to connect nodes with the selected edge style
+          </div>
+        </div>
+      </Panel>
+      <Controls />
+      <MiniMap
+        nodeColor={(node) => {
+          switch (node.type) {
+            case "input":
+              return "#2196f3";
+            case "output":
+              return "#e91e63";
+            case "process":
+              return "#9c27b0";
+            case "decision":
+              return "#ff9800";
+            case "database":
+              return "#4caf50";
+            case "cloud":
+              return "#03a9f4";
+            default:
+              return "#ccc";
+          }
+        }}
+        maskColor="rgba(240, 240, 240, 0.6)"
+      />
+      <Background variant="dots" gap={12} size={1} />
+    </ReactFlow>
   );
 };
 

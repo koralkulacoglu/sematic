@@ -8,7 +8,7 @@ class GeminiService {
 
   initialize(apiKey) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    this.model = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
   }
 
   async generateDiagram(prompt, existingDiagram = null) {
