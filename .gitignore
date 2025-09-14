@@ -89,4 +89,11 @@ jspm_packages/
 # dynamodb
 .dynamodb/
 
+# python
 venv
+__pycache__
+
+# amplify
+.amplify
+amplify_outputs*
+# amplifyconfiguration* - Commented out to commit our config for existing Cognito pool
