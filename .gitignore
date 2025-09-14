@@ -92,4 +92,4 @@ jspm_packages/
 # amplify
 .amplify
 amplify_outputs*
-amplifyconfiguration*
+# amplifyconfiguration* - Commented out to commit our config for existing Cognito pool
