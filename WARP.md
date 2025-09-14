@@ -10,6 +10,7 @@ This is an AI-powered interactive diagram editor built for Hack the North 2025. 
 
 The system follows a full-stack architecture with real-time streaming AI capabilities:
 
+
 ```
 Frontend (React + ReactFlow) ←→ WebSocket (Flask-SocketIO) ←→ Backend (Flask + Python) ←→ Gemini AI API
 ```
