@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from 'react-oidc-context';
+import { signOut } from 'aws-amplify/auth';
 import { 
   Container, AppBar, Toolbar, Typography, Button, TextField, Grid, Card, 
   CardActionArea, CardMedia, CardContent, IconButton, Dialog, DialogTitle, 
@@ -8,7 +8,8 @@ import {
 } from '@mui/material';
 import { 
   Add as AddIcon, Search as SearchIcon, Delete as DeleteIcon, 
-  Save as SaveIcon, Logout as LogoutIcon, FileUpload as FileUploadIcon 
+  Save as SaveIcon, Logout as LogoutIcon, FileUpload as FileUploadIcon,
+  Sort as SortIcon 
 } from '@mui/icons-material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 
@@ -16,20 +17,21 @@ const theme = createTheme({
   palette: {
     primary: {
       main: '#e53e3e',
-      light: '#fc8181',
-      dark: '#c53030',
+      light: '#f87171',
+      dark: '#dc2626',
     },
     secondary: {
-      main: '#ffffff',
-      light: '#f7fafc',
-      dark: '#edf2f7',
+      main: '#6b7280',
+      light: '#9ca3af',
+      dark: '#374151',
     },
     background: {
-      default: 'linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%)',
+      default: '#fefcfc',
       paper: '#ffffff'
     },
-    error: {
-      main: '#e53e3e',
+    text: {
+      primary: '#111827',
+      secondary: '#6b7280'
     }
   },
   typography: {
@@ -45,69 +47,45 @@ const theme = createTheme({
     MuiTextField: {
       styleOverrides: {
         root: {
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#e53e3e',
-          },
-          backgroundColor: 'white',
-          border: 'none',
-          outline: 'none',
-          boxShadow: 'none',
-          '& fieldset': {
-            border: 'none',
-            outline: 'none',
-          },
-          '&:hover fieldset': {
-            border: 'none',
-            outline: 'none',
-          },
-          '&.Mui-focused fieldset': {
-            border: 'none',
-            outline: 'none',
-            boxShadow: 'none',
-          },
-          '&:hover': {
-            backgroundColor: 'white',
-            outline: 'none',
-            boxShadow: 'none',
-          },
-          '&.Mui-focused': {
-            backgroundColor: 'white',
-            outline: 'none',
-            boxShadow: 'none',
-          },
-          '& input': {
-            outline: 'none',
-            boxShadow: 'none',
-            '&:focus': {
-              outline: 'none',
+          '& .MuiOutlinedInput-root': {
+            backgroundColor: '#f9fafb',
+            borderRadius: '12px',
+            '& fieldset': {
+              borderColor: '#e5e7eb',
             },
             '&:hover fieldset': {
-              border: 'none',
-              outline: 'none',
+              borderColor: '#ef4444',
             },
             '&.Mui-focused fieldset': {
-              border: 'none',
-              outline: 'none',
+              borderColor: '#ef4444',
               boxShadow: 'none',
             },
-            '&:hover': {
-              backgroundColor: 'white',
-              outline: 'none',
-              boxShadow: 'none',
-            },
-            '&.Mui-focused': {
-              backgroundColor: 'white',
-              outline: 'none',
-              boxShadow: 'none',
-            },
-            '& input': {
-              outline: 'none',
-              boxShadow: 'none',
-              '&:focus': {
-                outline: 'none',
-                boxShadow: 'none',
-              }
-            }
+          },
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          '&:focus': {
+            outline: 'none',
+            boxShadow: 'none',
+          },
+          '&:focus-visible': {
+            outline: 'none',
+            boxShadow: 'none',
+          },
+        },
+      },
+    },
+    MuiCardActionArea: {
+      styleOverrides: {
+        root: {
+          '&:hover': {
+            backgroundColor: 'transparent',
+          },
+          '&:hover .MuiCardActionArea-focusHighlight': {
+            opacity: 0,
           },
         },
       },
@@ -115,22 +93,20 @@ const theme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: '20px',
-          boxShadow: '0 6px 20px rgba(229, 62, 62, 0.15)',
-          transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
-          border: '2px solid transparent',
+          borderRadius: '16px',
+          boxShadow: 'none',
+          transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+          border: '1px solid #f3f4f6',
           '&:hover': {
-            transform: 'translateY(-8px) scale(1.02)',
-            boxShadow: '0 16px 32px rgba(229, 62, 62, 0.25)',
-            border: '2px solid #fc8181',
+            transform: 'translateY(-4px)',
+            boxShadow: '0 25px 60px rgba(220, 38, 38, 0.18), 0 12px 30px rgba(220, 38, 38, 0.12)',
+            border: '1px solid rgba(220, 38, 38, 0.4)',
           }
         },
       },
     },
   },
 });
-import { signOut } from 'aws-amplify/auth';
-import './Dashboard.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -139,6 +115,8 @@ const Dashboard = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newWhiteboardName, setNewWhiteboardName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('updated'); // 'updated' or 'name'
+  const [sortReverse, setSortReverse] = useState(false);
 
   // Load whiteboards from localStorage on component mount
   useEffect(() => {
@@ -274,18 +252,31 @@ const Dashboard = () => {
     localStorage.setItem('whiteboards', JSON.stringify(whiteboards));
   }, [whiteboards]);
 
-  // Filter whiteboards based on search query
+  // Filter and sort whiteboards based on search query and sort option
   useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredWhiteboards(whiteboards);
-    } else {
-      const filtered = whiteboards.filter(wb => 
+    let filtered = whiteboards;
+    
+    if (searchQuery.trim() !== '') {
+      filtered = whiteboards.filter(wb => 
         wb.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         wb.category.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      setFilteredWhiteboards(filtered);
     }
-  }, [whiteboards, searchQuery]);
+    
+    // Sort the filtered results
+    const sorted = [...filtered].sort((a, b) => {
+      let result;
+      if (sortBy === 'name') {
+        result = a.name.localeCompare(b.name);
+      } else {
+        // Sort by updated date (newest first)
+        result = new Date(b.updatedAt) - new Date(a.updatedAt);
+      }
+      return sortReverse ? -result : result;
+    });
+    
+    setFilteredWhiteboards(sorted);
+  }, [whiteboards, searchQuery, sortBy, sortReverse]);
 
   const handleCreateWhiteboard = () => {
     if (newWhiteboardName.trim()) {
@@ -455,6 +446,39 @@ const Dashboard = () => {
     return formatDate(dateString);
   };
 
+  const handleImport = (event) => {
+    const file = event.target.files[0];
+    if (file && file.type === "application/json") {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (data.nodes && data.edges) {
+            const newWhiteboard = {
+              id: `wb-${Date.now()}`,
+              name: file.name.replace(/\.json$/, ''),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              nodeCount: data.nodes.length,
+              previewImage: 'https://via.placeholder.com/300x200/6b7280/ffffff?text=Imported',
+              category: 'Imported',
+              data: data
+            };
+
+            const updatedWhiteboards = [newWhiteboard, ...whiteboards];
+            setWhiteboards(updatedWhiteboards);
+            navigate(`/whiteboard/${newWhiteboard.id}`);
+          } else {
+            alert('Invalid whiteboard JSON file.');
+          }
+        } catch (error) {
+          alert('Error parsing JSON file.');
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await signOut();
@@ -468,35 +492,60 @@ const Dashboard = () => {
     <ThemeProvider theme={theme}>
       <Box sx={{ 
         flexGrow: 1, 
-        background: 'linear-gradient(135deg, #fff5f5 0%, #fed7d7 50%, #fbb6ce 100%)', 
+        backgroundColor: '#fefcfc', 
         minHeight: '100vh', 
         overflowY: 'auto' 
       }}>
-        <AppBar position="sticky" color="default" elevation={0} sx={{ 
-          background: 'linear-gradient(90deg, #e53e3e 0%, #fc8181 100%)', 
-          backdropFilter: 'blur(10px)' 
+        <AppBar position="sticky" elevation={0} sx={{ 
+          backgroundColor: '#ffffff', 
+          borderBottom: '1px solid #e5e7eb',
+          color: '#111827'
         }}>
           <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 700, color: 'white' }}>
-              🎨 Whiteboards
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+              <img 
+                src="/sematic_2.png" 
+                alt="Sematic Logo" 
+                style={{ 
+                  height: '32px', 
+                  width: 'auto', 
+                  marginRight: '12px' 
+                }} 
+              />
+              <Typography 
+                variant="h5" 
+                component="div" 
+                sx={{ 
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontFamily: '"Inter", "SF Pro Display", "Segoe UI", system-ui, -apple-system, sans-serif',
+                  letterSpacing: '-0.02em',
+                  fontSize: '1.5rem'
+                }}
+              >
+                Sematic
+              </Typography>
+            </Box>
             <Button 
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => {
+                setNewWhiteboardName('');
+                setShowCreateModal(true);
+              }}
               sx={{
-                backgroundColor: 'white',
-                color: '#e53e3e',
+                backgroundColor: '#e53e3e',
+                color: 'white',
                 fontWeight: 600,
-                borderRadius: '25px',
+                borderRadius: '12px',
                 px: 3,
                 '&:hover': {
-                  backgroundColor: '#f7fafc',
-                  transform: 'scale(1.05)'
+                  backgroundColor: '#dc2626',
+                  transform: 'translateY(-1px)'
                 }
               }}
             >
-              ✨ New
+              New
             </Button>
             <input
               type="file"
@@ -511,107 +560,182 @@ const Dashboard = () => {
                 startIcon={<FileUploadIcon />}
                 sx={{ 
                   ml: 2,
-                  borderColor: 'white',
-                  color: 'white',
-                  borderRadius: '25px',
+                  borderColor: '#d1d5db',
+                  color: '#6b7280',
+                  borderRadius: '12px',
                   fontWeight: 600,
                   '&:hover': {
-                    borderColor: '#f7fafc',
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    transform: 'scale(1.05)'
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                    color: '#ef4444'
                   }
                 }}
                 component="span"
               >
-                📁 Import
+                Import
               </Button>
             </label>
             <Button 
               startIcon={<LogoutIcon />}
               sx={{ 
                 ml: 2,
-                color: 'white',
+                color: '#6b7280',
                 fontWeight: 600,
-                borderRadius: '25px',
+                borderRadius: '12px',
                 '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  transform: 'scale(1.05)'
+                  backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                  color: '#374151'
                 }
               }}
               onClick={handleLogout}
             >
-              👋 Logout
+              Logout
             </Button>
           </Toolbar>
         </AppBar>
 
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4, height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ mb: 4, position: 'relative' }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                backgroundColor: 'white',
-                borderRadius: '50px',
-                padding: '12px 20px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                border: 'none',
-                outline: 'none',
-                '&:focus-within': {
-                  boxShadow: '0 4px 20px rgba(229, 62, 62, 0.2)',
-                  outline: 'none',
-                  transform: 'scale(1.02)'
-                }
-              }}
-            >
-              <SearchIcon sx={{ color: '#e53e3e', mr: 2 }} />
-              <input
-                type="text"
-                placeholder="Search whiteboards..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  border: 'none',
-                  outline: 'none',
-                  backgroundColor: 'transparent',
-                  fontSize: '16px',
-                  fontFamily: 'Inter, Roboto, Helvetica, Arial, sans-serif',
-                  width: '100%',
-                  color: '#333',
-                  '::placeholder': {
-                    color: '#9e9e9e'
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 0, pb: 0, height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ mb: 1, position: 'relative', zIndex: 10 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  padding: '12px 20px',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                  border: '1px solid #e5e7eb',
+                  flexGrow: 1,
+                  '&:focus-within': {
+                    borderColor: '#e5e7eb'
                   }
                 }}
-              />
+              >
+                <SearchIcon sx={{ color: '#6b7280', mr: 2 }} />
+                <input
+                  type="text"
+                  placeholder="Search whiteboards..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    border: 'none',
+                    outline: 'none',
+                    backgroundColor: 'transparent',
+                    fontSize: '16px',
+                    fontFamily: 'Inter, Roboto, Helvetica, Arial, sans-serif',
+                    width: '100%',
+                    color: '#111827',
+                    boxShadow: 'none'
+                  }}
+                  onFocus={(e) => e.target.style.boxShadow = 'none'}
+                  onBlur={(e) => e.target.style.boxShadow = 'none'}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<SortIcon />}
+                  onClick={() => setSortBy(sortBy === 'updated' ? 'name' : 'updated')}
+                  sx={{
+                    borderColor: '#d1d5db',
+                    color: '#6b7280',
+                    borderRadius: '12px',
+                    fontWeight: 600,
+                    minWidth: '120px',
+                    '&:hover': {
+                      borderColor: '#e53e3e',
+                      backgroundColor: 'rgba(229, 62, 62, 0.05)',
+                      color: '#e53e3e'
+                    }
+                  }}
+                >
+                  {sortBy === 'updated' ? 'Updated' : 'Name'}
+                </Button>
+                <Button
+                  variant={sortReverse ? 'contained' : 'outlined'}
+                  onClick={() => setSortReverse(!sortReverse)}
+                  sx={{
+                    borderColor: sortReverse ? '#e53e3e' : '#d1d5db',
+                    backgroundColor: sortReverse ? '#e53e3e' : 'transparent',
+                    color: sortReverse ? 'white' : '#6b7280',
+                    borderRadius: '12px',
+                    fontWeight: 600,
+                    minWidth: '80px',
+                    '&:hover': {
+                      borderColor: '#e53e3e',
+                      backgroundColor: sortReverse ? '#dc2626' : 'rgba(229, 62, 62, 0.05)',
+                      color: sortReverse ? 'white' : '#e53e3e'
+                    }
+                  }}
+                >
+                  {sortReverse ? '↓' : '↑'}
+                </Button>
+              </Box>
             </Box>
           </Box>
 
           {filteredWhiteboards.length === 0 ? (
             <Box textAlign="center" mt={10}>
               <Typography variant="h5" color="textSecondary" gutterBottom>
-                {searchQuery ? 'No whiteboards found' : 'No whiteboards yet'}
+                {searchQuery ? 'No whiteboards found 😢' : 'No whiteboards yet'}
               </Typography>
               <Typography color="textSecondary">
-                {searchQuery ? 'Try adjusting your search terms.' : 'Create your first whiteboard to get started.'}
+                {searchQuery ? 'Typo perhaps? 🤔' : 'Create your first whiteboard to get started.'}
               </Typography>
               {!searchQuery && (
-                <Button variant="outlined" sx={{mt: 2}} onClick={handleLoadSamples}>Load sample whiteboards</Button>
+                <Button 
+                  variant="outlined" 
+                  sx={{
+                    mt: 2,
+                    borderColor: '#ef4444',
+                    color: '#ef4444',
+                    '&:hover': {
+                      backgroundColor: 'rgba(239, 68, 68, 0.05)'
+                    }
+                  }} 
+                  onClick={handleLoadSamples}
+                >
+                  Load sample whiteboards
+                </Button>
               )}
             </Box>
           ) : (
-            <Box sx={{ flexGrow: 1, overflow: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
-              <Grid container spacing={4}>
+            <Box sx={{ 
+              flexGrow: 1, 
+              overflow: 'auto', 
+              maxHeight: 'calc(100vh - 200px)',
+              pt: 3,
+              '&::-webkit-scrollbar': {
+                width: '6px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: 'transparent',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: 'rgba(229, 62, 62, 0.3)',
+                borderRadius: '20px',
+                border: 'none',
+              },
+              '&::-webkit-scrollbar-thumb:hover': {
+                background: 'rgba(229, 62, 62, 0.5)',
+              }
+            }}>
+              <Box sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px',
+                justifyItems: 'center',
+                maxWidth: '1100px',
+                margin: '0 auto',
+                padding: '0 16px'
+              }}>
                 {filteredWhiteboards.map((whiteboard) => (
-                <Grid item key={whiteboard.id} xs={12} sm={6} md={4} lg={3}>
-                  <Card sx={{ 
-                    width: '100%',
-                    height: '340px', 
+                  <Card key={whiteboard.id} sx={{ 
+                    width: '200px',
+                    height: '260px', 
                     display: 'flex', 
-                    flexDirection: 'column',
-                    minHeight: '340px',
-                    maxHeight: '340px',
-                    minWidth: '280px',
-                    maxWidth: '280px'
+                    flexDirection: 'column'
                   }}>
                     <CardActionArea onClick={() => handleOpenWhiteboard(whiteboard.id)} sx={{ 
                       height: '100%',
@@ -625,10 +749,10 @@ const Dashboard = () => {
                         image={whiteboard.previewImage}
                         alt={whiteboard.name}
                         sx={{ 
-                          borderBottom: '3px solid #fc8181',
+                          borderBottom: '2px solid #e5e7eb',
                           objectFit: 'cover',
-                          minHeight: '180px',
-                          maxHeight: '180px'
+                          minHeight: '130px',
+                          maxHeight: '130px'
                         }}
                       />
                       <CardContent sx={{ 
@@ -637,9 +761,9 @@ const Dashboard = () => {
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
-                        minHeight: '120px',
-                        maxHeight: '120px',
-                        background: 'linear-gradient(135deg, #ffffff 0%, #fff5f5 100%)',
+                        minHeight: '90px',
+                        maxHeight: '90px',
+                        backgroundColor: '#ffffff',
                         overflow: 'hidden'
                       }}>
                         <Box>
@@ -649,29 +773,33 @@ const Dashboard = () => {
                             component="div" 
                             noWrap
                             sx={{ 
-                              fontSize: '1rem',
+                              fontSize: '0.85rem',
                               lineHeight: 1.2,
-                              mb: 1
+                              mb: 2
                             }}
                           >
                             {whiteboard.name}
                           </Typography>
-                          <Chip 
-                            label={whiteboard.category} 
-                            size="small" 
-                            sx={{ 
-                              mb: 1, 
-                              fontWeight: 600, 
-                              fontSize: '0.75rem',
-                              backgroundColor: '#fed7d7',
-                              color: '#c53030',
-                              border: '1px solid #fc8181'
-                            }} 
-                          />
                         </Box>
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 'auto' }}>
-                          {whiteboard.nodeCount} elements
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 'auto' }}>
+                          <Box sx={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: '50%',
+                            backgroundColor: '#fef2f2',
+                            border: '1px solid #fecaca',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '10px',
+                            mr: 1
+                          }}>
+                            👤
+                          </Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                            Created by You
+                          </Typography>
+                        </Box>
                       </CardContent>
                     </CardActionArea>
                     <Box sx={{ p: 1, pt: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -683,14 +811,24 @@ const Dashboard = () => {
                       </IconButton>
                     </Box>
                   </Card>
-                </Grid>
                 ))}
-              </Grid>
+              </Box>
             </Box>
           )}
         </Container>
 
-        <Dialog open={showCreateModal} onClose={() => setShowCreateModal(false)}>
+        <Dialog 
+          open={showCreateModal} 
+          onClose={() => {
+            setNewWhiteboardName('');
+            setShowCreateModal(false);
+          }}
+          PaperProps={{
+            sx: {
+              borderRadius: '16px'
+            }
+          }}
+        >
           <DialogTitle>Create New Whiteboard</DialogTitle>
           <DialogContent>
             <TextField
@@ -711,24 +849,66 @@ const Dashboard = () => {
               sx={{ 
                 mt: 2, 
                 '& .MuiOutlinedInput-root': { 
+                  '&.Mui-focused': {
+                    outline: 'none !important',
+                    boxShadow: 'none !important'
+                  },
                   '&.Mui-focused fieldset': { 
-                    outline: 'none', 
-                    boxShadow: 'none',
-                    border: 'none'
+                    outline: 'none !important', 
+                    boxShadow: 'none !important',
+                    borderColor: 'rgba(229, 62, 62, 0.3) !important'
                   },
                   '& fieldset': {
                     border: '1px solid #e0e0e0'
                   },
                   '&:hover fieldset': {
-                    border: '1px solid #e53e3e'
+                    border: '1px solid rgba(229, 62, 62, 0.3)'
+                  },
+                  '& input': {
+                    outline: 'none !important',
+                    boxShadow: 'none !important'
+                  },
+                  '& input:focus': {
+                    outline: 'none !important',
+                    boxShadow: 'none !important'
                   }
                 } 
               }}
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setShowCreateModal(false)}>Cancel</Button>
-            <Button onClick={handleCreateWhiteboard} disabled={!newWhiteboardName.trim()}>Create</Button>
+            <Button 
+              onClick={() => {
+                setNewWhiteboardName('');
+                setShowCreateModal(false);
+              }}
+              sx={{
+                color: '#6b7280',
+                '&:hover': {
+                  backgroundColor: 'rgba(107, 114, 128, 0.1)'
+                }
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateWhiteboard} 
+              disabled={!newWhiteboardName.trim()}
+              variant="contained"
+              sx={{
+                backgroundColor: '#e53e3e',
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: '#dc2626'
+                },
+                '&:disabled': {
+                  backgroundColor: '#d1d5db',
+                  color: '#9ca3af'
+                }
+              }}
+            >
+              Create
+            </Button>
           </DialogActions>
         </Dialog>
       </Box>
