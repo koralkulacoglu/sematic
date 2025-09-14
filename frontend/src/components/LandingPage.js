@@ -1,17 +1,62 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from 'react-oidc-context';
 import './LandingPage.css';
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const auth = useAuth();
+
+  React.useEffect(() => {
+    // Only redirect if user just completed authentication (has tokens but is on landing page)
+    if (auth.isAuthenticated && window.location.search.includes('code=')) {
+      navigate('/dashboard');
+    }
+  }, [auth.isAuthenticated, navigate]);
 
   const handleGetStarted = () => {
-    navigate('/dashboard');
+    if (auth.isAuthenticated) {
+      navigate('/dashboard');
+    } else {
+      auth.signinRedirect();
+    }
+  };
+
+  const handleLogin = () => {
+    auth.signinRedirect();
   };
 
   return (
     <div className="landing-page">
       <div className="landing-container">
+        {/* Header */}
+        <header style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '20px 0',
+          marginBottom: '40px'
+        }}>
+          <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+            Diagram Builder
+          </div>
+          <button 
+            className="login-button"
+            onClick={auth.isAuthenticated ? () => navigate('/dashboard') : handleLogin}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#6366f1',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '500'
+            }}
+          >
+            {auth.isAuthenticated ? 'Go to Dashboard' : 'Login'}
+          </button>
+        </header>
+
         {/* Hero Section */}
         <div className="hero-section">
           <div className="hero-content">

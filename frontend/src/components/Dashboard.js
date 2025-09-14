@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from 'react-oidc-context';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const auth = useAuth();
   const [whiteboards, setWhiteboards] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newWhiteboardName, setNewWhiteboardName] = useState('');
@@ -112,6 +114,11 @@ const Dashboard = () => {
     return formatDate(dateString);
   };
 
+  const handleLogout = () => {
+    auth.removeUser();
+    navigate('/');
+  };
+
   return (
     <div className="dashboard">
       <div className="dashboard-container">
@@ -133,6 +140,22 @@ const Dashboard = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 New Whiteboard
+              </button>
+              <button 
+                className="logout-button"
+                onClick={handleLogout}
+                style={{
+                  marginLeft: '12px',
+                  padding: '10px 20px',
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                Logout
               </button>
             </div>
           </div>
