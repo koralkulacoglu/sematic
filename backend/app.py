@@ -27,7 +27,7 @@ class StreamingDiagramService:
     def __init__(self):
         self.model = None
         self.conversation_history = []  # Store previous messages for context
-        self.media_cache = {}  # Store uploaded media URIs by hash
+        self.uploaded_files = {}  # Store Gemini file URIs by content hash
         
     def initialize(self, api_key):
         """Initialize the Gemini API"""
@@ -55,30 +55,36 @@ class StreamingDiagramService:
         """Clear conversation history"""
         self.conversation_history = []
     
-    def clear_media_cache(self):
-        """Clear media cache"""
-        self.media_cache = {}
-        print("Media cache cleared")
+    def clear_uploaded_files(self):
+        """Clear uploaded files cache"""
+        self.uploaded_files = {}
+        print("Uploaded files cache cleared")
     
     def get_media_hash(self, data):
         """Generate hash for media data to use as cache key"""
         return hashlib.md5(data.encode() if isinstance(data, str) else data).hexdigest()
     
-    def get_or_upload_media(self, media_data, media_type, mime_type):
-        """Get cached media URI or upload new media and cache the URI"""
+    def get_or_upload_to_gemini(self, media_data, media_type, mime_type):
+        """Get cached Gemini file URI or upload new media to Gemini and store the URI"""
         if not media_data:
             return None
             
-        # Generate hash for caching
+        # Generate hash for content-based caching
         media_hash = self.get_media_hash(media_data)
         
-        # Check if we already have this media cached
-        if media_hash in self.media_cache:
-            cached_info = self.media_cache[media_hash]
-            print(f"Using cached {media_type} URI: {cached_info['uri']}")
-            return cached_info['file_obj']
+        # Check if we already have this file uploaded to Gemini
+        if media_hash in self.uploaded_files:
+            gemini_uri = self.uploaded_files[media_hash]
+            print(f"Using existing Gemini {media_type} URI: {gemini_uri}")
+            # Return the Gemini file object using the stored URI
+            try:
+                return genai.get_file(gemini_uri)
+            except Exception as e:
+                print(f"Error retrieving cached file {gemini_uri}: {e}")
+                # If retrieval fails, remove from cache and re-upload
+                del self.uploaded_files[media_hash]
         
-        # Upload new media and cache the result
+        # Upload new media to Gemini
         try:
             if media_type == 'audio':
                 # Decode base64 audio data
@@ -100,37 +106,34 @@ class StreamingDiagramService:
                 # Clean up temp file
                 os.unlink(temp_audio_path)
                 
-                # Cache the result
-                self.media_cache[media_hash] = {
-                    'uri': audio_file.uri,
-                    'file_obj': audio_file,
-                    'type': media_type,
-                    'mime_type': mime_type
-                }
+                # Store the Gemini URI for future use
+                self.uploaded_files[media_hash] = audio_file.uri
                 
-                print(f"Uploaded and cached new {media_type} with URI: {audio_file.uri}")
+                print(f"Uploaded new {media_type} to Gemini with URI: {audio_file.uri}")
                 return audio_file
                 
             elif media_type == 'image':
-                # For images, we can create the file object directly from base64
-                image_file_obj = {
-                    "mime_type": mime_type,
-                    "data": media_data
-                }
+                # For images, create temporary file and upload to Gemini
+                image_bytes = base64.b64decode(media_data)
                 
-                # Cache the result (for images we store the data directly)
-                self.media_cache[media_hash] = {
-                    'uri': f"image_{media_hash}",  # Pseudo URI for images
-                    'file_obj': image_file_obj,
-                    'type': media_type,
-                    'mime_type': mime_type
-                }
+                with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_image:
+                    temp_image.write(image_bytes)
+                    temp_image_path = temp_image.name
                 
-                print(f"Cached new {media_type} with hash: {media_hash}")
-                return image_file_obj
+                # Upload image file to Gemini
+                image_file = genai.upload_file(temp_image_path, mime_type=mime_type)
+                
+                # Clean up temp file
+                os.unlink(temp_image_path)
+                
+                # Store the Gemini URI for future use
+                self.uploaded_files[media_hash] = image_file.uri
+                
+                print(f"Uploaded new {media_type} to Gemini with URI: {image_file.uri}")
+                return image_file
                 
         except Exception as e:
-            print(f"Error uploading {media_type}: {e}")
+            print(f"Error uploading {media_type} to Gemini: {e}")
             return None
     
     def get_context_string(self):
@@ -175,8 +178,8 @@ class StreamingDiagramService:
                         'data': {'message': 'Processing voice command...'}
                     })
                     
-                    # Use cached audio or upload new one
-                    audio_file = self.get_or_upload_media(audio_data, 'audio', 'audio/webm')
+                    # Use cached audio or upload new one to Gemini
+                    audio_file = self.get_or_upload_to_gemini(audio_data, 'audio', 'audio/webm')
                     
                     if not audio_file:
                         raise Exception("Failed to process audio data")
@@ -192,10 +195,10 @@ class StreamingDiagramService:
             # Get conversation context
             context = self.get_context_string()
             
-            # Handle image data using cached URIs
+            # Handle image data using Gemini URIs
             image_file_obj = None
             if image_data:
-                image_file_obj = self.get_or_upload_media(image_data, 'image', 'image/png')
+                image_file_obj = self.get_or_upload_to_gemini(image_data, 'image', 'image/png')
             
             # Prepare content for the API
             if audio_data and audio_file:
@@ -429,12 +432,12 @@ def handle_stream_diagram_edit(data):
 
 @socketio.on('clear_history')
 def handle_clear_history():
-    """Clear conversation history and media cache"""
+    """Clear conversation history and uploaded files cache"""
     try:
         diagram_service.clear_history()
-        diagram_service.clear_media_cache()
-        emit('history_cleared', {'message': 'Conversation history and media cache cleared'})
-        print("Conversation history and media cache cleared")
+        diagram_service.clear_uploaded_files()
+        emit('history_cleared', {'message': 'Conversation history and uploaded files cache cleared'})
+        print("Conversation history and uploaded files cache cleared")
     except Exception as e:
         print(f"Error clearing history: {e}")
         emit('error', {'message': str(e)})
