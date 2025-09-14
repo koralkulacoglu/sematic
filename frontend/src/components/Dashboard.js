@@ -129,10 +129,11 @@ const theme = createTheme({
     },
   },
 });
+import { signOut } from 'aws-amplify/auth';
+import './Dashboard.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const auth = useAuth();
   const [whiteboards, setWhiteboards] = useState([]);
   const [filteredWhiteboards, setFilteredWhiteboards] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -454,41 +455,12 @@ const Dashboard = () => {
     return formatDate(dateString);
   };
 
-    const handleLogout = () => {
-    auth.removeUser();
-    navigate('/');
-  };
-
-  const handleImport = (event) => {
-    const file = event.target.files[0];
-    if (file && file.type === "application/json") {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = JSON.parse(e.target.result);
-          if (data.nodes && data.edges) {
-            const newWhiteboard = {
-              id: `wb-${Date.now()}`,
-              name: file.name.replace(/\.json$/, ''),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              nodeCount: data.nodes.length,
-              previewImage: 'https://via.placeholder.com/300x200/6b7280/ffffff?text=Imported',
-              category: 'Imported',
-              data: data
-            };
-
-            const updatedWhiteboards = [newWhiteboard, ...whiteboards];
-            setWhiteboards(updatedWhiteboards);
-            navigate(`/whiteboard/${newWhiteboard.id}`);
-          } else {
-            alert('Invalid whiteboard JSON file.');
-          }
-        } catch (error) {
-          alert('Error parsing JSON file.');
-        }
-      };
-      reader.readAsText(file);
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
   };
 

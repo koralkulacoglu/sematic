@@ -1,32 +1,71 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from 'react-oidc-context';
+import { useAuthenticator, Authenticator } from '@aws-amplify/ui-react';
 import './LandingPage.css';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const auth = useAuth();
+  const { authStatus } = useAuthenticator((context) => [context.authStatus]);
+  const [showAuth, setShowAuth] = React.useState(false);
 
   React.useEffect(() => {
-    // Only redirect if user just completed authentication (has tokens but is on landing page)
-    if (auth.isAuthenticated && window.location.search.includes('code=')) {
+    // Only redirect if user just completed authentication (check for recent sign-in)
+    if (authStatus === 'authenticated' && showAuth) {
       navigate('/dashboard');
     }
-  }, [auth.isAuthenticated, navigate]);
+  }, [authStatus, navigate, showAuth]);
 
   const handleGetStarted = () => {
-    if (auth.isAuthenticated) {
+    if (authStatus === 'authenticated') {
       navigate('/dashboard');
     } else {
-      auth.signinRedirect();
+      setShowAuth(true);
     }
   };
 
   const handleLogin = () => {
-    auth.signinRedirect();
+    setShowAuth(true);
   };
 
-  
+  if (showAuth) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh',
+        padding: '20px'
+      }}>
+        <div style={{ maxWidth: '400px', width: '100%' }}>
+          <Authenticator 
+            hideSignUp={false}
+            components={{
+              Header() {
+                return (
+                  <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                    <h2>Welcome to Diagram Builder</h2>
+                    <button 
+                      onClick={() => setShowAuth(false)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#6366f1',
+                        cursor: 'pointer',
+                        textDecoration: 'underline'
+                      }}
+                    >
+                      ← Back to Home
+                    </button>
+                  </div>
+                );
+              }
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="landing-page">
       <div className="landing-container">
@@ -43,7 +82,7 @@ const LandingPage = () => {
           </div>
           <button 
             className="login-button"
-            onClick={auth.isAuthenticated ? () => navigate('/dashboard') : handleLogin}
+            onClick={authStatus === 'authenticated' ? () => navigate('/dashboard') : handleLogin}
             style={{
               padding: '10px 20px',
               backgroundColor: '#6366f1',
@@ -54,7 +93,7 @@ const LandingPage = () => {
               fontWeight: '500'
             }}
           >
-            {auth.isAuthenticated ? 'Go to Dashboard' : 'Login'}
+            {authStatus === 'authenticated' ? 'Go to Dashboard' : 'Login'}
           </button>
         </header>
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from 'react-oidc-context';
+import { useAuthenticator } from '@aws-amplify/ui-react';
+import { Hub } from 'aws-amplify/utils';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 import WhiteboardEditor from './components/WhiteboardEditor';
@@ -9,9 +10,39 @@ import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
-  const auth = useAuth();
+  const { authStatus } = useAuthenticator((context) => [context.authStatus]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
 
-  if (auth.isLoading) {
+  React.useEffect(() => {
+    const unsubscribe = Hub.listen('auth', ({ payload: { event, data } }) => {
+      switch (event) {
+        case 'signedIn':
+          setIsLoading(false);
+          setError(null);
+          break;
+        case 'signedOut':
+          setIsLoading(false);
+          setError(null);
+          break;
+        case 'tokenRefresh_failure':
+          setError('Token refresh failed');
+          setIsLoading(false);
+          break;
+        default:
+          break;
+      }
+    });
+
+    // Initial loading check
+    if (authStatus !== 'configuring') {
+      setIsLoading(false);
+    }
+
+    return unsubscribe;
+  }, [authStatus]);
+
+  if (isLoading) {
     return (
       <div style={{
         display: 'flex',
@@ -25,7 +56,7 @@ function App() {
     );
   }
 
-  if (auth.error) {
+  if (error) {
     return (
       <div style={{
         display: 'flex',
@@ -35,7 +66,7 @@ function App() {
         fontSize: '18px',
         color: 'red'
       }}>
-        Authentication error: {auth.error.message}
+        Authentication error: {error}
       </div>
     );
   }

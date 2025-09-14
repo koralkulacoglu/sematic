@@ -88,3 +88,8 @@ jspm_packages/
 
 # dynamodb
 .dynamodb/
+
+# amplify
+.amplify
+amplify_outputs*
+# amplifyconfiguration* - Commented out to commit our config for existing Cognito pool

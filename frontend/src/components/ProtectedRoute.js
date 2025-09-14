@@ -1,12 +1,12 @@
 import React from 'react';
-import { useAuth } from 'react-oidc-context';
+import { useAuthenticator } from '@aws-amplify/ui-react';
 import { Navigate, useLocation } from 'react-router-dom';
 
 const ProtectedRoute = ({ children }) => {
-  const auth = useAuth();
+  const { authStatus } = useAuthenticator((context) => [context.authStatus]);
   const location = useLocation();
 
-  if (auth.isLoading) {
+  if (authStatus === 'configuring') {
     return (
       <div style={{
         display: 'flex',
@@ -20,22 +20,7 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  if (auth.error) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        fontSize: '18px',
-        color: 'red'
-      }}>
-        Authentication error: {auth.error.message}
-      </div>
-    );
-  }
-
-  if (!auth.isAuthenticated) {
+  if (authStatus !== 'authenticated') {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
