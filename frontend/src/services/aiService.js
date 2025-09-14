@@ -1,5 +1,5 @@
 import { getCurrentUser } from 'aws-amplify/auth';
-import { generateServerData } from 'aws-amplify/data';
+import { post } from 'aws-amplify/api';
 import { isLocal } from '../amplify-config';
 import whiteboardService from './whiteboardService';
 
@@ -54,14 +54,20 @@ class AIService {
       console.log('AIService - About to call Amplify Lambda function');
       console.log('AIService - Request data:', { prompt, hasAudio: !!audioData, hasImage: !!imageData });
       
+      if (this.useLocalStorage) {
+        // In local development mode, use simulation
+        console.log('AIService - Using simulation mode for local development');
+        return this.simulateAIProcessing(prompt, existingDiagram, callbacks);
+      }
+
       try {
-        // Call the Amplify AI processor Lambda function
-        console.log('AIService - Calling ai-processor Lambda function...');
-        const result = await generateServerData({
+        // Call the Amplify-generated API endpoint
+        console.log('AIService - Calling ai-processor via Amplify API...');
+        const apiResponse = await post({
+          apiName: 'default',
           path: '/ai-processor',
-          init: {
-            method: 'POST',
-            body: JSON.stringify({
+          options: {
+            body: {
               prompt,
               audioData,
               imageData,
@@ -69,10 +75,11 @@ class AIService {
               whiteboardId,
               userId: user.userId,
               userEmail
-            })
+            }
           }
         });
 
+        const result = await apiResponse.response.json();
         console.log('AIService - Lambda response:', result);
         
         if (result.commands && Array.isArray(result.commands)) {
