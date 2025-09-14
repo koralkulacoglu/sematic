@@ -10,6 +10,7 @@ import base64
 import binascii
 import tempfile
 import time
+import hashlib
 from dotenv import load_dotenv
 import google.generativeai as genai
 
@@ -26,6 +27,7 @@ class StreamingDiagramService:
     def __init__(self):
         self.model = None
         self.conversation_history = []  # Store previous messages for context
+        self.media_cache = {}  # Store uploaded media URIs by hash
         
     def initialize(self, api_key):
         """Initialize the Gemini API"""
@@ -52,6 +54,84 @@ class StreamingDiagramService:
     def clear_history(self):
         """Clear conversation history"""
         self.conversation_history = []
+    
+    def clear_media_cache(self):
+        """Clear media cache"""
+        self.media_cache = {}
+        print("Media cache cleared")
+    
+    def get_media_hash(self, data):
+        """Generate hash for media data to use as cache key"""
+        return hashlib.md5(data.encode() if isinstance(data, str) else data).hexdigest()
+    
+    def get_or_upload_media(self, media_data, media_type, mime_type):
+        """Get cached media URI or upload new media and cache the URI"""
+        if not media_data:
+            return None
+            
+        # Generate hash for caching
+        media_hash = self.get_media_hash(media_data)
+        
+        # Check if we already have this media cached
+        if media_hash in self.media_cache:
+            cached_info = self.media_cache[media_hash]
+            print(f"Using cached {media_type} URI: {cached_info['uri']}")
+            return cached_info['file_obj']
+        
+        # Upload new media and cache the result
+        try:
+            if media_type == 'audio':
+                # Decode base64 audio data
+                audio_data_clean = media_data
+                missing_padding = len(audio_data_clean) % 4
+                if missing_padding:
+                    audio_data_clean += '=' * (4 - missing_padding)
+                
+                audio_bytes = base64.b64decode(audio_data_clean)
+                
+                # Create temporary file for audio
+                with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as temp_audio:
+                    temp_audio.write(audio_bytes)
+                    temp_audio_path = temp_audio.name
+                
+                # Upload audio file to Gemini
+                audio_file = genai.upload_file(temp_audio_path, mime_type=mime_type)
+                
+                # Clean up temp file
+                os.unlink(temp_audio_path)
+                
+                # Cache the result
+                self.media_cache[media_hash] = {
+                    'uri': audio_file.uri,
+                    'file_obj': audio_file,
+                    'type': media_type,
+                    'mime_type': mime_type
+                }
+                
+                print(f"Uploaded and cached new {media_type} with URI: {audio_file.uri}")
+                return audio_file
+                
+            elif media_type == 'image':
+                # For images, we can create the file object directly from base64
+                image_file_obj = {
+                    "mime_type": mime_type,
+                    "data": media_data
+                }
+                
+                # Cache the result (for images we store the data directly)
+                self.media_cache[media_hash] = {
+                    'uri': f"image_{media_hash}",  # Pseudo URI for images
+                    'file_obj': image_file_obj,
+                    'type': media_type,
+                    'mime_type': mime_type
+                }
+                
+                print(f"Cached new {media_type} with hash: {media_hash}")
+                return image_file_obj
+                
+        except Exception as e:
+            print(f"Error uploading {media_type}: {e}")
+            return None
     
     def get_context_string(self):
         """Get formatted conversation history for context"""
@@ -84,65 +164,41 @@ class StreamingDiagramService:
                     'data': {'message': 'Analyzing your diagram...'}
                 })
             
-            # Handle audio input first
+            # Handle audio input using cached URIs
+            audio_file = None
             if audio_data:
                 try:
-                    print("WAV file received!")
-                    
-                    # Decode base64 audio data
-                    # Handle potential padding issues
-                    audio_data_clean = audio_data
-                    # Add padding if necessary
-                    missing_padding = len(audio_data_clean) % 4
-                    if missing_padding:
-                        audio_data_clean += '=' * (4 - missing_padding)
-                    
-                    audio_bytes = base64.b64decode(audio_data_clean)
-                    
-                    # Save as cmd.wav in the current directory
-                    #cmd_wav_path = os.path.join(os.getcwd(), 'cmd.wav')
-                    #with open(cmd_wav_path, 'wb') as wav_file:
-                        #wav_file.write(audio_bytes)
-                    #print(f"Audio saved as: {cmd_wav_path}")
-                    
-                    # Create temporary file for audio
-                    with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as temp_audio:
-                        temp_audio.write(audio_bytes)
-                        temp_audio_path = temp_audio.name
+                    print("Audio data received, checking cache...")
                     
                     socketio.emit('command', {
                         'type': 'status',
                         'data': {'message': 'Processing voice command...'}
                     })
                     
-                    # Upload audio file to Gemini for direct processing
-                    # Use WebM format since that's what we're sending from frontend
-                    audio_file = genai.upload_file(temp_audio_path, mime_type='audio/webm')
+                    # Use cached audio or upload new one
+                    audio_file = self.get_or_upload_media(audio_data, 'audio', 'audio/webm')
                     
-                    # Clean up temp file
-                    os.unlink(temp_audio_path)
+                    if not audio_file:
+                        raise Exception("Failed to process audio data")
                     
-                    # Set audio_file to be used directly in the main prompt
-                    # We'll modify the content preparation to include the audio
-                    prompt = None  # No text prompt when using audio directly
+                    # Set prompt to None for audio-only requests
+                    prompt = None
                     
-                except binascii.Error as b64_error:
-                    print(f"Base64 decoding error: {b64_error}")
-                    print(f"Audio data length: {len(audio_data) if audio_data else 'None'}")
-                    print(f"Audio data sample: {audio_data[:100] if audio_data else 'None'}...")
-                    socketio.emit('error', {'message': f'Unable to decode audio data: {str(b64_error)}'})
-                    return
                 except Exception as audio_error:
                     print(f"Audio processing error: {audio_error}")
-                    print(f"Audio data type: {type(audio_data)}")
                     socketio.emit('error', {'message': f'Audio processing failed: {str(audio_error)}'})
                     return
             
             # Get conversation context
             context = self.get_context_string()
             
+            # Handle image data using cached URIs
+            image_file_obj = None
+            if image_data:
+                image_file_obj = self.get_or_upload_media(image_data, 'image', 'image/png')
+            
             # Prepare content for the API
-            if audio_data and 'audio_file' in locals():
+            if audio_data and audio_file:
                 # For audio requests - send audio directly to Gemini
                 content = [
                     f"""{context}Listen to this audio command and respond with a series of commands to modify a ReactFlow diagram.
@@ -171,7 +227,7 @@ Guidelines:
 Respond with commands only, one JSON object per line:""",
                     audio_file
                 ]
-            elif image_data:
+            elif image_data and image_file_obj:
                 # For vision requests with image
                 content = [
                     f"""{context}{prompt}
@@ -200,10 +256,7 @@ Guidelines:
 - Only modify what's requested, preserve other elements
 
 Respond with commands only, one JSON object per line:""",
-                    {
-                        "mime_type": "image/png",
-                        "data": image_data
-                    }
+                    image_file_obj
                 ]
             else:
                 # For text-only requests
@@ -376,11 +429,12 @@ def handle_stream_diagram_edit(data):
 
 @socketio.on('clear_history')
 def handle_clear_history():
-    """Clear conversation history"""
+    """Clear conversation history and media cache"""
     try:
         diagram_service.clear_history()
-        emit('history_cleared', {'message': 'Conversation history cleared'})
-        print("Conversation history cleared")
+        diagram_service.clear_media_cache()
+        emit('history_cleared', {'message': 'Conversation history and media cache cleared'})
+        print("Conversation history and media cache cleared")
     except Exception as e:
         print(f"Error clearing history: {e}")
         emit('error', {'message': str(e)})

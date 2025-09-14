@@ -13,6 +13,7 @@ function App() {
   const [lastPrompt, setLastPrompt] = useState("");
   const [streamingStatus, setStreamingStatus] = useState(null);
   const [commandProcessor, setCommandProcessor] = useState(null);
+  const [mediaCache, setMediaCache] = useState(new Map()); // Cache for media URIs
 
   // Initialize streaming service and command processor
   useEffect(() => {
@@ -29,6 +30,18 @@ function App() {
       streamingService.disconnect();
     };
   }, []);
+
+  // Helper function to generate hash for media data
+  const generateMediaHash = (data) => {
+    // Simple hash function for client-side caching
+    let hash = 0;
+    for (let i = 0; i < data.length; i++) {
+      const char = data.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(16);
+  };
 
   const handleGenerate = async (prompt, audioData = null) => {
     if (!commandProcessor) {
@@ -59,10 +72,32 @@ function App() {
             reader.readAsDataURL(blob);
           });
 
+          // Check if we've seen this image before
+          const imageHash = generateMediaHash(imageData);
+          if (mediaCache.has(`image_${imageHash}`)) {
+            console.log("Using cached image data");
+            // Backend will handle caching, just send the same data
+          } else {
+            // Store in frontend cache for reference
+            setMediaCache(prev => new Map(prev).set(`image_${imageHash}`, true));
+          }
+
           // Add color context to the prompt
           prompt = `${colorContext}\n\nUser request: ${prompt}`;
         } catch (captureError) {
           console.log("Could not capture minimap, proceeding without image:", captureError);
+        }
+      }
+
+      // Handle audio data caching
+      if (audioData) {
+        const audioHash = generateMediaHash(audioData);
+        if (mediaCache.has(`audio_${audioHash}`)) {
+          console.log("Using cached audio data");
+          // Backend will handle caching, just send the same data
+        } else {
+          // Store in frontend cache for reference
+          setMediaCache(prev => new Map(prev).set(`audio_${audioHash}`, true));
         }
       }
 
@@ -106,6 +141,8 @@ function App() {
     setEdges([]);
     setLastPrompt("");
     setError("");
+    // Clear media cache when clearing diagram
+    setMediaCache(new Map());
   };
 
   const exportDiagram = () => {
