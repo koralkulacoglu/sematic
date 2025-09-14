@@ -20,7 +20,7 @@ load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
 CORS(app, origins=["http://localhost:3000"])
-socketio = SocketIO(app, cors_allowed_origins="http://localhost:3000")
+socketio = SocketIO(app, cors_allowed_origins="http://localhost:3000", async_mode='threading')
 
 
 class StreamingDiagramService:

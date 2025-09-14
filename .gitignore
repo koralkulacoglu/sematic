@@ -90,3 +90,8 @@ jspm_packages/
 .dynamodb/
 
 venv
+
+# amplify
+.amplify
+amplify_outputs*
+# amplifyconfiguration* - Commented out to commit our config for existing Cognito pool
