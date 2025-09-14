@@ -88,3 +88,5 @@ jspm_packages/
 
 # dynamodb
 .dynamodb/
+
+venv
