@@ -13,6 +13,12 @@ const PromptInput = ({
     onGenerate(null, audioData);
   };
 
+  const handleAudioChunk = (audioChunk) => {
+    // Handle streaming audio chunks - for now just log them
+    console.log('Received audio chunk:', audioChunk.length, 'characters');
+    // TODO: Send chunks to backend for real-time processing
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (prompt.trim()) {
@@ -63,6 +69,7 @@ const PromptInput = ({
         {/* Voice Recorder */}
         <VoiceRecorder 
           onRecordingComplete={handleVoiceRecording}
+          onAudioChunk={handleAudioChunk}
           isGenerating={isGenerating}
           hasExistingDiagram={hasExistingDiagram}
         />

@@ -1,9 +1,10 @@
 import React, { useState, useRef, useCallback } from 'react';
 
-const VoiceRecorder = ({ onRecordingComplete, isGenerating, hasExistingDiagram }) => {
+const VoiceRecorder = ({ onRecordingComplete, onAudioChunk, isGenerating, hasExistingDiagram }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [isStreaming, setIsStreaming] = useState(false);
   
   const mediaRecorderRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -36,7 +37,7 @@ const VoiceRecorder = ({ onRecordingComplete, isGenerating, hasExistingDiagram }
       audioContextRef.current = audioContext;
       analyserRef.current = analyser;
 
-      // Set up MediaRecorder
+      // Set up MediaRecorder for streaming
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus'
       });
@@ -47,6 +48,16 @@ const VoiceRecorder = ({ onRecordingComplete, isGenerating, hasExistingDiagram }
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
+          
+          // Stream audio chunks in real-time if callback provided
+          if (onAudioChunk && isStreaming) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64Chunk = reader.result.split(',')[1];
+              onAudioChunk(base64Chunk);
+            };
+            reader.readAsDataURL(event.data);
+          }
         }
       };
 
@@ -89,7 +100,10 @@ const VoiceRecorder = ({ onRecordingComplete, isGenerating, hasExistingDiagram }
       // Start recording
       setIsRecording(true);
       setRecordingTime(0);
-      mediaRecorder.start();
+      setIsStreaming(true);
+      
+      // Start recording with small time slices for streaming (500ms chunks)
+      mediaRecorder.start(500);
 
       // Start timers
       recordingTimerRef.current = setInterval(() => {
@@ -119,6 +133,7 @@ const VoiceRecorder = ({ onRecordingComplete, isGenerating, hasExistingDiagram }
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      setIsStreaming(false);
       setAudioLevel(0);
       
       // Clear timers
@@ -255,27 +270,23 @@ const VoiceRecorder = ({ onRecordingComplete, isGenerating, hasExistingDiagram }
         onTouchEnd={handleTouchEnd}
         disabled={isGenerating}
         style={{
-          padding: '16px 24px',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          border: 'none',
-          borderRadius: '12px',
-          cursor: isGenerating ? 'not-allowed' : 'pointer',
-          background: isRecording 
-            ? 'linear-gradient(45deg, #ff4444, #ff6666)' 
-            : isGenerating 
-            ? '#ccc' 
-            : 'linear-gradient(45deg, #4CAF50, #66BB6A)',
+          width: '100%',
+          padding: '16px',
+          backgroundColor: isRecording ? '#dc3545' : '#007bff',
           color: 'white',
-          transition: 'all 0.2s',
-          position: 'relative',
-          userSelect: 'none',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: isGenerating ? 'not-allowed' : 'pointer',
+          fontSize: '14px',
+          fontWeight: 'bold',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           gap: '8px',
-          minHeight: '60px',
-          boxShadow: isRecording ? '0 4px 20px rgba(255, 68, 68, 0.4)' : '0 2px 8px rgba(0,0,0,0.1)'
+          opacity: isGenerating ? 0.6 : 1,
+          transition: 'all 0.2s ease',
+          userSelect: 'none',
+          boxShadow: isRecording ? '0 0 20px rgba(220, 53, 69, 0.3)' : '0 2px 4px rgba(0,0,0,0.1)',
         }}
       >
         {isRecording ? (
@@ -284,10 +295,10 @@ const VoiceRecorder = ({ onRecordingComplete, isGenerating, hasExistingDiagram }
               width: '12px',
               height: '12px',
               backgroundColor: 'white',
-              borderRadius: '50%',
-              animation: 'pulse 1s ease-in-out infinite'
+              borderRadius: '2px',
+              animation: 'pulse 1s infinite'
             }} />
-            <span>Recording... {formatTime(recordingTime)}</span>
+            <span>Recording... {formatTime(recordingTime)} {isStreaming && '(Streaming)'}</span>
           </>
         ) : isGenerating ? (
           <span>Processing...</span>
