@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import VoiceRecorder from "./VoiceRecorder";
 
 const PromptInput = ({
   onGenerate,
@@ -7,10 +8,26 @@ const PromptInput = ({
 }) => {
   const [prompt, setPrompt] = useState("");
 
+  const handleVoiceRecording = (audioData) => {
+    // Pass audio data to the parent component
+    onGenerate(null, audioData);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (prompt.trim()) {
       onGenerate(prompt.trim());
+      setPrompt(""); // Clear the textbox after submission
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (prompt.trim()) {
+        onGenerate(prompt.trim());
+        setPrompt(""); // Clear the textbox after Enter submission
+      }
     }
   };
 
@@ -39,60 +56,71 @@ const PromptInput = ({
   return (
     <div>
       <div style={{ marginBottom: "16px" }}>
-        <h3 style={{ marginBottom: "8px", fontSize: "16px", color: "#333" }}>
-          {hasExistingDiagram ? "🤖 AI Editor" : "🤖 AI Generator"}
+        <h3 style={{ marginBottom: "16px", fontSize: "16px", color: "#333" }}>
+          {hasExistingDiagram ? "🎤 Voice AI Editor" : "🎤 Voice AI Generator"}
         </h3>
 
-        {/* Prompt Input */}
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "12px" }}>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder={
-                hasExistingDiagram
-                  ? "Describe your changes..."
-                  : "Describe your diagram..."
-              }
-              rows={3}
-              style={{
-                width: "100%",
-                padding: "8px",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                fontSize: "12px",
-                resize: "vertical",
-                boxSizing: "border-box",
-              }}
-            />
-          </div>
+        {/* Voice Recorder */}
+        <VoiceRecorder 
+          onRecordingComplete={handleVoiceRecording}
+          isGenerating={isGenerating}
+          hasExistingDiagram={hasExistingDiagram}
+        />
+        
+        {/* Fallback Text Input */}
+        <div style={{ marginTop: "20px", paddingTop: "20px", borderTop: "1px solid #eee" }}>
+          <h4 style={{ fontSize: "14px", marginBottom: "8px", color: "#666" }}>
+            💬 Or type your command:
+          </h4>
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: "12px" }}>
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={
+                  hasExistingDiagram
+                    ? "Describe your changes..."
+                    : "Describe your diagram..."
+                }
+                rows={2}
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  fontSize: "12px",
+                  resize: "vertical",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={!prompt.trim() || isGenerating}
-            style={{
-              backgroundColor:
-                !prompt.trim() || isGenerating ? "#ccc" : "#28a745",
-              color: "white",
-              border: "none",
-              padding: "8px 16px",
-              borderRadius: "4px",
-              cursor:
-                !prompt.trim() || isGenerating ? "not-allowed" : "pointer",
-              fontSize: "12px",
-              fontWeight: "bold",
-              width: "100%",
-            }}
-          >
-            {isGenerating
-              ? hasExistingDiagram
-                ? "Updating..."
-                : "Generating..."
-              : hasExistingDiagram
-              ? "Update Diagram"
-              : "Generate Diagram"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={!prompt.trim() || isGenerating}
+              style={{
+                backgroundColor:
+                  !prompt.trim() || isGenerating ? "#ccc" : "#007bff",
+                color: "white",
+                border: "none",
+                padding: "8px 16px",
+                borderRadius: "4px",
+                cursor:
+                  !prompt.trim() || isGenerating ? "not-allowed" : "pointer",
+                fontSize: "12px",
+                fontWeight: "bold",
+                width: "100%",
+              }}
+            >
+              {isGenerating
+                ? "Processing..."
+                : hasExistingDiagram
+                ? "Update with Text"
+                : "Generate from Text"}
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* Example Prompts */}

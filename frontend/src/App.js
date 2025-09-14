@@ -30,7 +30,7 @@ function App() {
     };
   }, []);
 
-  const handleGenerate = async (prompt) => {
+  const handleGenerate = async (prompt, audioData = null) => {
     if (!commandProcessor) {
       setError("System not ready. Please try again.");
       return;
@@ -38,8 +38,8 @@ function App() {
 
     setIsGenerating(true);
     setError("");
-    setLastPrompt(prompt);
-    setStreamingStatus("Connecting to AI...");
+    setLastPrompt(audioData ? "[Voice Command]" : prompt);
+    setStreamingStatus(audioData ? "Processing voice command..." : "Connecting to AI...");
 
     try {
       const existingDiagram = { nodes, edges };
@@ -68,7 +68,7 @@ function App() {
 
       setStreamingStatus("Analyzing with AI...");
 
-      streamingService.streamDiagramEdit(prompt, imageData, existingDiagram, {
+      streamingService.streamDiagramEdit(prompt, imageData, existingDiagram, audioData, {
         onCommand: (command) => {
           commandProcessor.processCommand(command);
         },

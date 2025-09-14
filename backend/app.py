@@ -7,7 +7,9 @@ import re
 import asyncio
 import threading
 import base64
+import binascii
 import tempfile
+import time
 from dotenv import load_dotenv
 import google.generativeai as genai
 
@@ -23,6 +25,7 @@ socketio = SocketIO(app, cors_allowed_origins="http://localhost:3000")
 class StreamingDiagramService:
     def __init__(self):
         self.model = None
+        self.conversation_history = []  # Store previous messages for context
         
     def initialize(self, api_key):
         """Initialize the Gemini API"""
@@ -35,7 +38,34 @@ class StreamingDiagramService:
             print(f"Failed to initialize Gemini API: {e}")
             return False
     
-    def stream_diagram_edits(self, prompt, existing_diagram, image_data=None):
+    def add_to_history(self, user_message, ai_response):
+        """Add a message exchange to conversation history"""
+        self.conversation_history.append({
+            'user': user_message,
+            'ai': ai_response,
+            'timestamp': time.time()
+        })
+        # Keep only last 10 exchanges to prevent context from getting too long
+        if len(self.conversation_history) > 10:
+            self.conversation_history = self.conversation_history[-10:]
+    
+    def clear_history(self):
+        """Clear conversation history"""
+        self.conversation_history = []
+    
+    def get_context_string(self):
+        """Get formatted conversation history for context"""
+        if not self.conversation_history:
+            return ""
+        
+        context_parts = []
+        for exchange in self.conversation_history[-5:]:  # Use last 5 exchanges
+            context_parts.append(f"User: {exchange['user']}")
+            context_parts.append(f"AI: {exchange['ai']}")
+        
+        return "Previous conversation context:\n" + "\n".join(context_parts) + "\n\n"
+    
+    def stream_diagram_edits(self, prompt, existing_diagram, image_data=None, audio_data=None):
         """Stream diagram edits from Gemini AI"""
         if not self.model:
             socketio.emit('error', {'message': 'Gemini API not initialized'})
@@ -43,16 +73,108 @@ class StreamingDiagramService:
         
         try:
             # Send initial status
-            socketio.emit('command', {
-                'type': 'status',
-                'data': {'message': 'Analyzing your diagram...'}
-            })
+            if audio_data:
+                socketio.emit('command', {
+                    'type': 'status',
+                    'data': {'message': 'Processing voice command...'}
+                })
+            else:
+                socketio.emit('command', {
+                    'type': 'status',
+                    'data': {'message': 'Analyzing your diagram...'}
+                })
+            
+            # Handle audio input first
+            if audio_data:
+                try:
+                    print("WAV file received!")
+                    
+                    # Decode base64 audio data
+                    # Handle potential padding issues
+                    audio_data_clean = audio_data
+                    # Add padding if necessary
+                    missing_padding = len(audio_data_clean) % 4
+                    if missing_padding:
+                        audio_data_clean += '=' * (4 - missing_padding)
+                    
+                    audio_bytes = base64.b64decode(audio_data_clean)
+                    
+                    # Save as cmd.wav in the current directory
+                    #cmd_wav_path = os.path.join(os.getcwd(), 'cmd.wav')
+                    #with open(cmd_wav_path, 'wb') as wav_file:
+                        #wav_file.write(audio_bytes)
+                    #print(f"Audio saved as: {cmd_wav_path}")
+                    
+                    # Create temporary file for audio
+                    with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as temp_audio:
+                        temp_audio.write(audio_bytes)
+                        temp_audio_path = temp_audio.name
+                    
+                    socketio.emit('command', {
+                        'type': 'status',
+                        'data': {'message': 'Processing voice command...'}
+                    })
+                    
+                    # Upload audio file to Gemini for direct processing
+                    # Use WebM format since that's what we're sending from frontend
+                    audio_file = genai.upload_file(temp_audio_path, mime_type='audio/webm')
+                    
+                    # Clean up temp file
+                    os.unlink(temp_audio_path)
+                    
+                    # Set audio_file to be used directly in the main prompt
+                    # We'll modify the content preparation to include the audio
+                    prompt = None  # No text prompt when using audio directly
+                    
+                except binascii.Error as b64_error:
+                    print(f"Base64 decoding error: {b64_error}")
+                    print(f"Audio data length: {len(audio_data) if audio_data else 'None'}")
+                    print(f"Audio data sample: {audio_data[:100] if audio_data else 'None'}...")
+                    socketio.emit('error', {'message': f'Unable to decode audio data: {str(b64_error)}'})
+                    return
+                except Exception as audio_error:
+                    print(f"Audio processing error: {audio_error}")
+                    print(f"Audio data type: {type(audio_data)}")
+                    socketio.emit('error', {'message': f'Audio processing failed: {str(audio_error)}'})
+                    return
+            
+            # Get conversation context
+            context = self.get_context_string()
             
             # Prepare content for the API
-            if image_data:
+            if audio_data and 'audio_file' in locals():
+                # For audio requests - send audio directly to Gemini
+                content = [
+                    f"""{context}Listen to this audio command and respond with a series of commands to modify a ReactFlow diagram.
+You must respond ONLY with a series of JSON commands, one per line, no other text.
+
+Current diagram: {json.dumps(existing_diagram)}
+
+Available commands:
+1. {{"type": "status", "data": {{"message": "Description of current step"}}}}
+2. {{"type": "add_node", "data": {{"id": "unique_id", "nodeType": "process|input|output|decision|database|cloud|group|default", "position": {{"x": 100, "y": 200}}, "label": "Node Label"}}}}
+3. {{"type": "update_node", "data": {{"id": "existing_id", "changes": {{"position": {{"x": 100, "y": 200}}, "label": "New Label", "nodeType": "new_type"}}}}}}
+4. {{"type": "delete_node", "data": {{"id": "node_to_delete"}}}}
+5. {{"type": "add_edge", "data": {{"id": "edge_id", "source": "source_node_id", "target": "target_node_id", "edgeType": "default|straight|step|smoothstep|bezier|simplebezier"}}}}
+6. {{"type": "update_edge", "data": {{"id": "existing_edge_id", "changes": {{"edgeType": "new_type"}}}}}}
+7. {{"type": "delete_edge", "data": {{"id": "edge_to_delete"}}}}
+8. {{"type": "complete", "data": {{"message": "Edit completed successfully"}}}}
+
+Guidelines:
+- Start with a status message describing what you'll do
+- Make changes step by step with status updates
+- Use appropriate node types (input=start, output=end, process=action, decision=condition, etc.)
+- Position new nodes logically (spread them out, avoid overlaps)
+- Always end with a "complete" command
+- Only modify what's requested, preserve other elements
+
+Respond with commands only, one JSON object per line:""",
+                    audio_file
+                ]
+            elif image_data:
                 # For vision requests with image
                 content = [
-                    f"""{prompt}
+                    f"""{context}{prompt}
 
 You are a diagram editing AI that responds with a series of commands to modify a ReactFlow diagram.
 You must respond ONLY with a series of JSON commands, one per line, no other text.
@@ -85,7 +207,7 @@ Respond with commands only, one JSON object per line:""",
                 ]
             else:
                 # For text-only requests
-                content = f"""
+                content = f"""{context}
 You are a diagram editing AI that responds with a series of commands to modify a ReactFlow diagram.
 You must respond ONLY with a series of JSON commands, one per line, no other text.
 
@@ -126,9 +248,12 @@ Respond with commands only, one JSON object per line:"""
             )
             
             buffer = ""
+            full_response = ""  # Capture full AI response for history
+            
             for chunk in response:
                 if chunk.text:
                     buffer += chunk.text
+                    full_response += chunk.text
                     
                     # Process complete lines as they arrive
                     lines = buffer.split('\n')
@@ -149,6 +274,10 @@ Respond with commands only, one JSON object per line:"""
                 'type': 'complete',
                 'data': {'message': 'All changes applied successfully!'}
             })
+            
+            # Store conversation in history
+            user_input = prompt if prompt else "[Audio command]"
+            self.add_to_history(user_input, full_response.strip())
             
         except Exception as e:
             print(f"Error streaming diagram edits: {e}")
@@ -230,10 +359,11 @@ def handle_stream_diagram_edit(data):
         prompt = data.get('prompt', '')
         existing_diagram = data.get('existingDiagram', {})
         image_data = data.get('imageData', None)
+        audio_data = data.get('audioData', None)
         
         # Run the streaming in a separate thread to avoid blocking
         def stream_worker():
-            diagram_service.stream_diagram_edits(prompt, existing_diagram, image_data)
+            diagram_service.stream_diagram_edits(prompt, existing_diagram, image_data, audio_data)
         
         thread = threading.Thread(target=stream_worker)
         thread.daemon = True
@@ -241,6 +371,18 @@ def handle_stream_diagram_edit(data):
         
     except Exception as e:
         print(f"Error handling stream_diagram_edit: {e}")
+        emit('error', {'message': str(e)})
+
+
+@socketio.on('clear_history')
+def handle_clear_history():
+    """Clear conversation history"""
+    try:
+        diagram_service.clear_history()
+        emit('history_cleared', {'message': 'Conversation history cleared'})
+        print("Conversation history cleared")
+    except Exception as e:
+        print(f"Error clearing history: {e}")
         emit('error', {'message': str(e)})
 
 

@@ -26,7 +26,7 @@ class StreamingDiagramService {
     return this.socket;
   }
 
-  streamDiagramEdit(prompt, apiKey, existingDiagram, callbacks = {}) {
+  streamDiagramEdit(prompt, apiKey, existingDiagram, audioData = null, callbacks = {}) {
     if (!this.socket || !this.isConnected) {
       console.error("Socket not connected");
       return;
@@ -81,6 +81,7 @@ class StreamingDiagramService {
       apiKey: actualApiKey,
       existingDiagram,
       imageData, // Add image data for vision requests
+      audioData, // Add audio data for voice requests
     });
   }
 
