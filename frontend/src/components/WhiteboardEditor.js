@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { AppBar, Toolbar, Typography, Button, Box, Snackbar } from '@mui/material';
+import { ArrowBack as ArrowBackIcon, Save as SaveIcon, Download as DownloadIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import PromptInput from "./PromptInput";
 import DiagramCanvas from "./DiagramCanvas";
 import streamingService from "../services/streamingService";
@@ -16,6 +18,7 @@ function WhiteboardEditor() {
   const [lastPrompt, setLastPrompt] = useState("");
   const [streamingStatus, setStreamingStatus] = useState(null);
   const [commandProcessor, setCommandProcessor] = useState(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   // Load whiteboard data
   useEffect(() => {
@@ -38,26 +41,6 @@ function WhiteboardEditor() {
   }, [whiteboardId, navigate]);
 
   // Save whiteboard data whenever nodes or edges change
-  useEffect(() => {
-    if (whiteboard && whiteboardId) {
-      const savedWhiteboards = localStorage.getItem('whiteboards');
-      if (savedWhiteboards) {
-        const whiteboards = JSON.parse(savedWhiteboards);
-        const updatedWhiteboards = whiteboards.map(wb => {
-          if (wb.id === whiteboardId) {
-            return {
-              ...wb,
-              data: { nodes, edges },
-              nodeCount: nodes.length,
-              updatedAt: new Date().toISOString()
-            };
-          }
-          return wb;
-        });
-        localStorage.setItem('whiteboards', JSON.stringify(updatedWhiteboards));
-      }
-    }
-  }, [nodes, edges, whiteboardId]);
 
   // Initialize streaming service and command processor
   useEffect(() => {
@@ -169,6 +152,28 @@ function WhiteboardEditor() {
     navigate('/dashboard');
   };
 
+  const handleSave = () => {
+    if (whiteboard && whiteboardId) {
+      const savedWhiteboards = localStorage.getItem('whiteboards');
+      if (savedWhiteboards) {
+        const whiteboards = JSON.parse(savedWhiteboards);
+        const updatedWhiteboards = whiteboards.map(wb => {
+          if (wb.id === whiteboardId) {
+            return {
+              ...wb,
+              data: { nodes, edges },
+              nodeCount: nodes.length,
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return wb;
+        });
+        localStorage.setItem('whiteboards', JSON.stringify(updatedWhiteboards));
+        setSnackbarOpen(true);
+      }
+    }
+  };
+
   if (!whiteboard) {
     return (
       <div style={{ 
@@ -185,123 +190,37 @@ function WhiteboardEditor() {
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Top Header with Tools */}
-      <div
-        style={{
-          height: "60px",
-          backgroundColor: "#f8f9fa",
-          borderBottom: "1px solid #ddd",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 20px",
-          position: "relative",
-          zIndex: 1000,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <button
-            onClick={handleBackToDashboard}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "8px 12px",
-              backgroundColor: "transparent",
-              color: "#6b7280",
-              border: "1px solid #d1d5db",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: "14px",
-              transition: "all 0.2s ease",
-            }}
-            onMouseOver={(e) => {
-              e.target.style.backgroundColor = "#f3f4f6";
-              e.target.style.color = "#374151";
-            }}
-            onMouseOut={(e) => {
-              e.target.style.backgroundColor = "transparent";
-              e.target.style.color = "#6b7280";
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+      <AppBar position="static" color="default" elevation={1} sx={{ zIndex: 1000 }}>
+        <Toolbar>
+          <Button startIcon={<ArrowBackIcon />} onClick={handleBackToDashboard} sx={{ mr: 2 }}>
             Dashboard
-          </button>
-          <h1 style={{ margin: 0, fontSize: "20px", color: "#333" }}>
+          </Button>
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             {whiteboard.name}
-          </h1>
-        </div>
-        
-        {/* Streaming Status */}
-        {streamingStatus && (
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              transform: "translateX(-50%)",
-              backgroundColor: "rgba(227, 242, 253, 0.9)",
-              color: "#1976d2",
-              padding: "6px 12px",
-              borderRadius: "4px",
-              border: "1px solid #bbdefb",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              fontSize: "12px",
-            }}
-          >
-            <div
-              style={{
-                width: "12px",
-                height: "12px",
-                border: "2px solid #1976d2",
-                borderTop: "2px solid transparent",
-                borderRadius: "50%",
-                animation: "spin 1s linear infinite",
-              }}
-            ></div>
-            <span>{streamingStatus}</span>
-          </div>
-        )}
+          </Typography>
 
-        {/* Top Right Tools */}
-        <div style={{ display: "flex", gap: "8px" }}>
+          {streamingStatus && (
+            <Box sx={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 1, backgroundColor: 'rgba(227, 242, 253, 0.9)', p: '6px 12px', borderRadius: 1, border: '1px solid #bbdefb' }}>
+              <div style={{ width: '12px', height: '12px', border: '2px solid #1976d2', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+              <Typography variant="caption" color="primary">{streamingStatus}</Typography>
+            </Box>
+          )}
+
+          <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSave}>
+            Save
+          </Button>
           {nodes.length > 0 && (
             <>
-              <button
-                onClick={exportDiagram}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#17a2b8",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontSize: "12px",
-                }}
-              >
-                Export JSON
-              </button>
-              <button
-                onClick={clearDiagram}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#6c757d",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontSize: "12px",
-                }}
-              >
-                Clear All
-              </button>
+              <Button startIcon={<DownloadIcon />} onClick={exportDiagram} sx={{ ml: 2 }}>
+                Export
+              </Button>
+              <Button startIcon={<DeleteIcon />} onClick={clearDiagram} color="warning" sx={{ ml: 1 }}>
+                Clear
+              </Button>
             </>
           )}
-        </div>
-      </div>
+        </Toolbar>
+      </AppBar>
 
       {/* Main Content Area */}
       <div style={{ flex: 1, display: "flex" }}>
@@ -375,6 +294,12 @@ function WhiteboardEditor() {
         </div>
       </div>
 
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        message="Whiteboard saved successfully!"
+      />
       {/* Add spinning animation */}
       <style>
         {`

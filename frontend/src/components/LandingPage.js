@@ -26,6 +26,7 @@ const LandingPage = () => {
     auth.signinRedirect();
   };
 
+  
   return (
     <div className="landing-page">
       <div className="landing-container">

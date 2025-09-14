@@ -1,7 +1,134 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from 'react-oidc-context';
-import './Dashboard.css';
+import { 
+  Container, AppBar, Toolbar, Typography, Button, TextField, Grid, Card, 
+  CardActionArea, CardMedia, CardContent, IconButton, Dialog, DialogTitle, 
+  DialogContent, DialogActions, InputAdornment, Chip, Box 
+} from '@mui/material';
+import { 
+  Add as AddIcon, Search as SearchIcon, Delete as DeleteIcon, 
+  Save as SaveIcon, Logout as LogoutIcon, FileUpload as FileUploadIcon 
+} from '@mui/icons-material';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#e53e3e',
+      light: '#fc8181',
+      dark: '#c53030',
+    },
+    secondary: {
+      main: '#ffffff',
+      light: '#f7fafc',
+      dark: '#edf2f7',
+    },
+    background: {
+      default: 'linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%)',
+      paper: '#ffffff'
+    },
+    error: {
+      main: '#e53e3e',
+    }
+  },
+  typography: {
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    h4: {
+      fontWeight: 700,
+    },
+    h6: {
+      fontWeight: 600,
+    }
+  },
+  components: {
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#e53e3e',
+          },
+          backgroundColor: 'white',
+          border: 'none',
+          outline: 'none',
+          boxShadow: 'none',
+          '& fieldset': {
+            border: 'none',
+            outline: 'none',
+          },
+          '&:hover fieldset': {
+            border: 'none',
+            outline: 'none',
+          },
+          '&.Mui-focused fieldset': {
+            border: 'none',
+            outline: 'none',
+            boxShadow: 'none',
+          },
+          '&:hover': {
+            backgroundColor: 'white',
+            outline: 'none',
+            boxShadow: 'none',
+          },
+          '&.Mui-focused': {
+            backgroundColor: 'white',
+            outline: 'none',
+            boxShadow: 'none',
+          },
+          '& input': {
+            outline: 'none',
+            boxShadow: 'none',
+            '&:focus': {
+              outline: 'none',
+            },
+            '&:hover fieldset': {
+              border: 'none',
+              outline: 'none',
+            },
+            '&.Mui-focused fieldset': {
+              border: 'none',
+              outline: 'none',
+              boxShadow: 'none',
+            },
+            '&:hover': {
+              backgroundColor: 'white',
+              outline: 'none',
+              boxShadow: 'none',
+            },
+            '&.Mui-focused': {
+              backgroundColor: 'white',
+              outline: 'none',
+              boxShadow: 'none',
+            },
+            '& input': {
+              outline: 'none',
+              boxShadow: 'none',
+              '&:focus': {
+                outline: 'none',
+                boxShadow: 'none',
+              }
+            }
+          },
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: '20px',
+          boxShadow: '0 6px 20px rgba(229, 62, 62, 0.15)',
+          transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+          border: '2px solid transparent',
+          '&:hover': {
+            transform: 'translateY(-8px) scale(1.02)',
+            boxShadow: '0 16px 32px rgba(229, 62, 62, 0.25)',
+            border: '2px solid #fc8181',
+          }
+        },
+      },
+    },
+  },
+});
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -327,209 +454,313 @@ const Dashboard = () => {
     return formatDate(dateString);
   };
 
-  const handleLogout = () => {
+    const handleLogout = () => {
     auth.removeUser();
     navigate('/');
   };
 
-  return (
-    <div className="dashboard">
-      <div className="dashboard-container">
-        {/* Header */}
-        <header className="dashboard-header">
-          <div className="header-content">
-            <div className="header-left">
-              <h1 className="dashboard-title">Whiteboards</h1>
-            </div>
-            <div className="header-actions">
-              <button 
-                className="create-button"
-                onClick={() => setShowCreateModal(true)}
-              >
-                <svg className="create-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                New
-              </button>
-              <button 
-                className="logout-button"
-                onClick={handleLogout}
-                style={{
-                  marginLeft: '12px',
-                  padding: '10px 20px',
-                  backgroundColor: '#ef4444',
+  const handleImport = (event) => {
+    const file = event.target.files[0];
+    if (file && file.type === "application/json") {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (data.nodes && data.edges) {
+            const newWhiteboard = {
+              id: `wb-${Date.now()}`,
+              name: file.name.replace(/\.json$/, ''),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              nodeCount: data.nodes.length,
+              previewImage: 'https://via.placeholder.com/300x200/6b7280/ffffff?text=Imported',
+              category: 'Imported',
+              data: data
+            };
+
+            const updatedWhiteboards = [newWhiteboard, ...whiteboards];
+            setWhiteboards(updatedWhiteboards);
+            navigate(`/whiteboard/${newWhiteboard.id}`);
+          } else {
+            alert('Invalid whiteboard JSON file.');
+          }
+        } catch (error) {
+          alert('Error parsing JSON file.');
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
+    return (
+    <ThemeProvider theme={theme}>
+      <Box sx={{ 
+        flexGrow: 1, 
+        background: 'linear-gradient(135deg, #fff5f5 0%, #fed7d7 50%, #fbb6ce 100%)', 
+        minHeight: '100vh', 
+        overflowY: 'auto' 
+      }}>
+        <AppBar position="sticky" color="default" elevation={0} sx={{ 
+          background: 'linear-gradient(90deg, #e53e3e 0%, #fc8181 100%)', 
+          backdropFilter: 'blur(10px)' 
+        }}>
+          <Toolbar>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 700, color: 'white' }}>
+              🎨 Whiteboards
+            </Typography>
+            <Button 
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setShowCreateModal(true)}
+              sx={{
+                backgroundColor: 'white',
+                color: '#e53e3e',
+                fontWeight: 600,
+                borderRadius: '25px',
+                px: 3,
+                '&:hover': {
+                  backgroundColor: '#f7fafc',
+                  transform: 'scale(1.05)'
+                }
+              }}
+            >
+              ✨ New
+            </Button>
+            <input
+              type="file"
+              id="import-file"
+              style={{ display: 'none' }}
+              accept=".json"
+              onChange={handleImport}
+            />
+            <label htmlFor="import-file">
+              <Button 
+                variant="outlined"
+                startIcon={<FileUploadIcon />}
+                sx={{ 
+                  ml: 2,
+                  borderColor: 'white',
                   color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: '500'
+                  borderRadius: '25px',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: '#f7fafc',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    transform: 'scale(1.05)'
+                  }
                 }}
+                component="span"
               >
-                Logout
-              </button>
-            </div>
-          </div>
-          
-          {/* Search Bar */}
-          <div className="search-container">
-            <div className="search-bar">
-              <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
+                📁 Import
+              </Button>
+            </label>
+            <Button 
+              startIcon={<LogoutIcon />}
+              sx={{ 
+                ml: 2,
+                color: 'white',
+                fontWeight: 600,
+                borderRadius: '25px',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  transform: 'scale(1.05)'
+                }
+              }}
+              onClick={handleLogout}
+            >
+              👋 Logout
+            </Button>
+          </Toolbar>
+        </AppBar>
+
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4, height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ mb: 4, position: 'relative' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                backgroundColor: 'white',
+                borderRadius: '50px',
+                padding: '12px 20px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                border: 'none',
+                outline: 'none',
+                '&:focus-within': {
+                  boxShadow: '0 4px 20px rgba(229, 62, 62, 0.2)',
+                  outline: 'none',
+                  transform: 'scale(1.02)'
+                }
+              }}
+            >
+              <SearchIcon sx={{ color: '#e53e3e', mr: 2 }} />
               <input
                 type="text"
                 placeholder="Search whiteboards..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
+                style={{
+                  border: 'none',
+                  outline: 'none',
+                  backgroundColor: 'transparent',
+                  fontSize: '16px',
+                  fontFamily: 'Inter, Roboto, Helvetica, Arial, sans-serif',
+                  width: '100%',
+                  color: '#333',
+                  '::placeholder': {
+                    color: '#9e9e9e'
+                  }
+                }}
               />
-              {searchQuery && (
-                <button 
-                  className="clear-search"
-                  onClick={() => setSearchQuery('')}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-            </div>
-          </div>
-        </header>
+            </Box>
+          </Box>
 
-        {/* Whiteboards Grid */}
-        <main className="dashboard-main">
           {filteredWhiteboards.length === 0 ? (
-            <div className="empty-state">
-              {searchQuery ? (
-                <>
-                  <div className="empty-icon">🔍</div>
-                  <h3>No whiteboards found</h3>
-                  <p>Try adjusting your search terms or create a new whiteboard</p>
-                </>
-              ) : (
-                <>
-                  <div className="empty-icon">📋</div>
-                  <h3>No whiteboards yet</h3>
-                  <p>Create your first whiteboard to get started with AI-powered diagramming</p>
-                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                    <button 
-                      className="create-button"
-                      onClick={() => setShowCreateModal(true)}
-                    >
-                      New
-                    </button>
-                    <button 
-                      className="create-button primary"
-                      onClick={handleLoadSamples}
-                    >
-                      Load sample whiteboards
-                    </button>
-                  </div>
-                </>
+            <Box textAlign="center" mt={10}>
+              <Typography variant="h5" color="textSecondary" gutterBottom>
+                {searchQuery ? 'No whiteboards found' : 'No whiteboards yet'}
+              </Typography>
+              <Typography color="textSecondary">
+                {searchQuery ? 'Try adjusting your search terms.' : 'Create your first whiteboard to get started.'}
+              </Typography>
+              {!searchQuery && (
+                <Button variant="outlined" sx={{mt: 2}} onClick={handleLoadSamples}>Load sample whiteboards</Button>
               )}
-            </div>
+            </Box>
           ) : (
-            <div className="whiteboards-grid">
-              {filteredWhiteboards.map((whiteboard) => (
-                <div 
-                  key={whiteboard.id}
-                  className="whiteboard-card"
-                  onClick={() => handleOpenWhiteboard(whiteboard.id)}
-                >
-                  <div className="card-preview">
-                    <img 
-                      src={whiteboard.previewImage} 
-                      alt={whiteboard.name}
-                      className="preview-image"
-                    />
-                    <div className="card-overlay">
-                      <button 
-                        className="delete-button"
-                        onClick={(e) => handleDeleteWhiteboard(whiteboard.id, e)}
-                        title="Delete whiteboard"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="card-content">
-                    <h3 className="card-title">{whiteboard.name}</h3>
-                    <div className="card-meta">
-                      <span className="category-badge">{whiteboard.category}</span>
-                      <span className="node-count">{whiteboard.nodeCount} elements</span>
-                    </div>
-                    <div className="card-footer">
-                      <span className="last-updated">
-                        {getTimeAgo(whiteboard.updatedAt)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <Box sx={{ flexGrow: 1, overflow: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
+              <Grid container spacing={4}>
+                {filteredWhiteboards.map((whiteboard) => (
+                <Grid item key={whiteboard.id} xs={12} sm={6} md={4} lg={3}>
+                  <Card sx={{ 
+                    width: '100%',
+                    height: '340px', 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    minHeight: '340px',
+                    maxHeight: '340px',
+                    minWidth: '280px',
+                    maxWidth: '280px'
+                  }}>
+                    <CardActionArea onClick={() => handleOpenWhiteboard(whiteboard.id)} sx={{ 
+                      height: '100%',
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      alignItems: 'stretch'
+                    }}>
+                      <CardMedia
+                        component="img"
+                        height="160"
+                        image={whiteboard.previewImage}
+                        alt={whiteboard.name}
+                        sx={{ 
+                          borderBottom: '3px solid #fc8181',
+                          objectFit: 'cover',
+                          minHeight: '180px',
+                          maxHeight: '180px'
+                        }}
+                      />
+                      <CardContent sx={{ 
+                        flexGrow: 1, 
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        minHeight: '120px',
+                        maxHeight: '120px',
+                        background: 'linear-gradient(135deg, #ffffff 0%, #fff5f5 100%)',
+                        overflow: 'hidden'
+                      }}>
+                        <Box>
+                          <Typography 
+                            gutterBottom 
+                            variant="h6" 
+                            component="div" 
+                            noWrap
+                            sx={{ 
+                              fontSize: '1rem',
+                              lineHeight: 1.2,
+                              mb: 1
+                            }}
+                          >
+                            {whiteboard.name}
+                          </Typography>
+                          <Chip 
+                            label={whiteboard.category} 
+                            size="small" 
+                            sx={{ 
+                              mb: 1, 
+                              fontWeight: 600, 
+                              fontSize: '0.75rem',
+                              backgroundColor: '#fed7d7',
+                              color: '#c53030',
+                              border: '1px solid #fc8181'
+                            }} 
+                          />
+                        </Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 'auto' }}>
+                          {whiteboard.nodeCount} elements
+                        </Typography>
+                      </CardContent>
+                    </CardActionArea>
+                    <Box sx={{ p: 1, pt: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Updated {getTimeAgo(whiteboard.updatedAt)}
+                      </Typography>
+                      <IconButton size="small" onClick={(e) => handleDeleteWhiteboard(whiteboard.id, e)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  </Card>
+                </Grid>
+                ))}
+              </Grid>
+            </Box>
           )}
-        </main>
-      </div>
+        </Container>
 
-      {/* Create Modal */}
-      {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Create New Whiteboard</h2>
-              <button 
-                className="modal-close"
-                onClick={() => setShowCreateModal(false)}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="modal-content">
-              <div className="form-group">
-                <label htmlFor="whiteboard-name">Whiteboard Name</label>
-                <input
-                  id="whiteboard-name"
-                  type="text"
-                  value={newWhiteboardName}
-                  onChange={(e) => setNewWhiteboardName(e.target.value)}
-                  placeholder="Enter whiteboard name..."
-                  autoFocus
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleCreateWhiteboard();
-                    }
-                  }}
-                />
-              </div>
-            </div>
-            
-            <div className="modal-footer">
-              <button 
-                className="button secondary"
-                onClick={() => setShowCreateModal(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="button primary"
-                onClick={handleCreateWhiteboard}
-                disabled={!newWhiteboardName.trim()}
-              >
-                Create Whiteboard
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+        <Dialog open={showCreateModal} onClose={() => setShowCreateModal(false)}>
+          <DialogTitle>Create New Whiteboard</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              id="name"
+              placeholder="Enter whiteboard name..."
+              type="text"
+              fullWidth
+              variant="outlined"
+              value={newWhiteboardName}
+              onChange={(e) => setNewWhiteboardName(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && newWhiteboardName.trim()) {
+                  handleCreateWhiteboard();
+                }
+              }}
+              sx={{ 
+                mt: 2, 
+                '& .MuiOutlinedInput-root': { 
+                  '&.Mui-focused fieldset': { 
+                    outline: 'none', 
+                    boxShadow: 'none',
+                    border: 'none'
+                  },
+                  '& fieldset': {
+                    border: '1px solid #e0e0e0'
+                  },
+                  '&:hover fieldset': {
+                    border: '1px solid #e53e3e'
+                  }
+                } 
+              }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowCreateModal(false)}>Cancel</Button>
+            <Button onClick={handleCreateWhiteboard} disabled={!newWhiteboardName.trim()}>Create</Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    </ThemeProvider>
   );
 };
 
