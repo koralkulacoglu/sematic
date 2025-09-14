@@ -88,3 +88,8 @@ jspm_packages/
 
 # dynamodb
 .dynamodb/
+
+# amplify
+.amplify
+amplify_outputs*
+amplifyconfiguration*

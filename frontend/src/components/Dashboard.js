@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from 'react-oidc-context';
+import { signOut } from 'aws-amplify/auth';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const auth = useAuth();
   const [whiteboards, setWhiteboards] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newWhiteboardName, setNewWhiteboardName] = useState('');
@@ -114,9 +113,13 @@ const Dashboard = () => {
     return formatDate(dateString);
   };
 
-  const handleLogout = () => {
-    auth.removeUser();
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   return (
