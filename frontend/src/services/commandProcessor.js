@@ -6,6 +6,8 @@ export class DiagramCommandProcessor {
   }
 
   processCommand(command) {
+    console.log("⚙️ [PROCESSING COMMAND]", command);
+    
     switch (command.type) {
       case "status":
         this.handleStatus(command.data);
@@ -32,15 +34,17 @@ export class DiagramCommandProcessor {
         this.handleComplete(command.data);
         break;
       default:
-        console.warn("Unknown command type:", command.type);
+        console.warn("❓ [UNKNOWN COMMAND]", command.type, command);
     }
   }
 
   handleStatus(data) {
+    console.log("📊 [STATUS UPDATE]", data.message);
     this.setStatus(data.message);
   }
 
   handleAddNode(data) {
+    console.log("➕ [ADD NODE]", data);
     const newNode = {
       id: data.id,
       type: data.nodeType || "default",
@@ -53,6 +57,7 @@ export class DiagramCommandProcessor {
   }
 
   handleUpdateNode(data) {
+    console.log("✏️ [UPDATE NODE]", data);
     this.setNodes((prevNodes) =>
       prevNodes.map((node) => {
         if (node.id === data.id) {
@@ -71,6 +76,7 @@ export class DiagramCommandProcessor {
   }
 
   handleDeleteNode(data) {
+    console.log("🗑️ [DELETE NODE]", data);
     this.setNodes((prevNodes) =>
       prevNodes.filter((node) => node.id !== data.id)
     );
@@ -86,6 +92,7 @@ export class DiagramCommandProcessor {
   }
 
   handleAddEdge(data) {
+    console.log("🔗 [ADD EDGE]", data);
     const newEdge = {
       id: data.id,
       source: data.source,
@@ -100,6 +107,7 @@ export class DiagramCommandProcessor {
   }
 
   handleUpdateEdge(data) {
+    console.log("🔄 [UPDATE EDGE]", data);
     this.setEdges((prevEdges) =>
       prevEdges.map((edge) => {
         if (edge.id === data.id) {
@@ -117,6 +125,7 @@ export class DiagramCommandProcessor {
   }
 
   handleDeleteEdge(data) {
+    console.log("❌ [DELETE EDGE]", data);
     this.setEdges((prevEdges) =>
       prevEdges.filter((edge) => edge.id !== data.id)
     );
@@ -124,6 +133,7 @@ export class DiagramCommandProcessor {
   }
 
   handleComplete(data) {
+    console.log("🎉 [COMPLETE]", data);
     this.setStatus(data.message);
     setTimeout(() => {
       this.setStatus(null);

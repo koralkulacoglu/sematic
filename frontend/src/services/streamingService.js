@@ -15,12 +15,17 @@ class StreamingDiagramService {
 
     this.socket.on("connect", () => {
       this.isConnected = true;
-      console.log("Connected to streaming server");
+      console.log("🔌 Connected to streaming server");
     });
 
     this.socket.on("disconnect", () => {
       this.isConnected = false;
-      console.log("Disconnected from streaming server");
+      console.log("🔌 Disconnected from streaming server");
+    });
+
+    // Log all incoming messages from Flask server
+    this.socket.onAny((eventName, ...args) => {
+      console.log(`📨 [FLASK SERVER] Event: ${eventName}`, args);
     });
 
     return this.socket;
@@ -44,18 +49,21 @@ class StreamingDiagramService {
 
     // Set up event listeners
     const handleCommand = (command) => {
+      console.log("🤖 [GEMINI EDIT ACTION]", command);
       if (callbacks.onCommand) {
         callbacks.onCommand(command);
       }
     };
 
     const handleError = (error) => {
+      console.error("❌ [FLASK SERVER ERROR]", error);
       if (callbacks.onError) {
         callbacks.onError(error);
       }
     };
 
     const handleComplete = () => {
+      console.log("✅ [GEMINI COMPLETE]");
       if (callbacks.onComplete) {
         callbacks.onComplete();
       }
@@ -76,13 +84,23 @@ class StreamingDiagramService {
     this.socket.on("error", handleError);
 
     // Send the edit request
-    this.socket.emit("stream_diagram_edit", {
+    const requestData = {
       prompt,
       apiKey: actualApiKey,
       existingDiagram,
       imageData, // Add image data for vision requests
       audioData, // Add audio data for voice requests
+    };
+    
+    console.log("📤 [SENDING TO FLASK SERVER]", {
+      prompt: prompt || "[Audio Command]",
+      hasImageData: !!imageData,
+      hasAudioData: !!audioData,
+      diagramNodes: existingDiagram?.nodes?.length || 0,
+      diagramEdges: existingDiagram?.edges?.length || 0
     });
+    
+    this.socket.emit("stream_diagram_edit", requestData);
   }
 
   disconnect() {
