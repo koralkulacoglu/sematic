@@ -93,7 +93,7 @@ const DiagramCanvas = ({
     (params) => {
       const newEdge = {
         ...params,
-        id: `edge-${params.source}-${params.target}`,
+        id: `edge-${params.source}-${params.target}-${Date.now()}`,
         type: selectedEdgeType,
         animated: selectedEdgeType === "default",
         style: { strokeWidth: 2 },
@@ -302,7 +302,8 @@ const DiagramFlowInner = ({
         setTimeout(() => {
           const minimapCanvas = document.querySelector('.react-flow__minimap canvas');
           if (!minimapCanvas) {
-            reject(new Error('Could not find minimap canvas'));
+            console.warn('Minimap canvas not available, skipping image capture');
+            resolve(null); // Return null instead of rejecting
             return;
           }
 

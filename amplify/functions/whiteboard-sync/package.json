@@ -1,0 +1,8 @@
+{
+  "name": "whiteboard-sync",
+  "version": "1.0.0",
+  "type": "module",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145"
+  }
+}

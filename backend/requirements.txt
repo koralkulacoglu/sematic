@@ -1,7 +1,0 @@
-Flask==3.0.0
-Flask-SocketIO==5.3.6
-Flask-CORS==4.0.0
-python-dotenv==1.0.0
-google-generativeai==0.8.3
-eventlet==0.33.3
-watchdog==3.0.0

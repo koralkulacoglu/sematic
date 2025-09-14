@@ -1,35 +1,147 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "./App.css";
 import PromptInput from "./components/PromptInput";
 import DiagramCanvas from "./components/DiagramCanvas";
-import streamingService from "./services/streamingService";
+import aiService from "./services/aiService";
+import whiteboardService from "./services/whiteboardService";
 import { DiagramCommandProcessor } from "./services/commandProcessor";
 
-function DiagramApp() {
-  const [nodes, setNodes] = useState([]);
-  const [edges, setEdges] = useState([]);
+// Debounce utility function
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+function DiagramApp({ 
+  whiteboardId, 
+  initialData, 
+  canEdit = true, 
+  canUseAI = true, 
+  onSave 
+}) {
+  const [nodes, setNodes] = useState(initialData?.nodes || []);
+  const [edges, setEdges] = useState(initialData?.edges || []);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const [lastPrompt, setLastPrompt] = useState("");
   const [streamingStatus, setStreamingStatus] = useState(null);
   const [commandProcessor, setCommandProcessor] = useState(null);
-  const [mediaCache, setMediaCache] = useState(new Map()); // Cache for media URIs
+  const [mediaCache, setMediaCache] = useState(new Map());
+  const [connectedUsers, setConnectedUsers] = useState([]);
+  const [subscription, setSubscription] = useState(null);
+  const [eventSubscription, setEventSubscription] = useState(null);
 
-  // Initialize streaming service and command processor
+  // Initialize command processor
   useEffect(() => {
-    streamingService.connect();
-
     const processor = new DiagramCommandProcessor(
       setNodes,
       setEdges,
       setStreamingStatus
     );
     setCommandProcessor(processor);
+  }, []);
+
+  // Load initial data
+  useEffect(() => {
+    if (initialData) {
+      setNodes(initialData.nodes || []);
+      setEdges(initialData.edges || []);
+    }
+  }, [initialData]);
+
+  // Set up real-time subscriptions
+  useEffect(() => {
+    if (!whiteboardId) return;
+
+    // Subscribe to whiteboard changes
+    const whiteboardSub = whiteboardService.subscribeToWhiteboardChanges(
+      whiteboardId,
+      (data) => {
+        console.log('Received whiteboard update:', data);
+        if (data && data.data) {
+          setNodes(data.data.nodes || []);
+          setEdges(data.data.edges || []);
+        }
+      }
+    );
+
+    // Subscribe to real-time collaboration events
+    const eventSub = whiteboardService.subscribeToWhiteboardEvents(
+      whiteboardId,
+      (event) => {
+        console.log('Received collaboration event:', event);
+        handleCollaborationEvent(event);
+      }
+    );
+
+    setSubscription(whiteboardSub);
+    setEventSubscription(eventSub);
+
+    // Send user join event
+    whiteboardService.sendWhiteboardEvent(whiteboardId, 'user_join', {
+      timestamp: new Date().toISOString()
+    });
 
     return () => {
-      streamingService.disconnect();
+      // Send user leave event
+      whiteboardService.sendWhiteboardEvent(whiteboardId, 'user_leave', {
+        timestamp: new Date().toISOString()
+      });
+      
+      // Clean up subscriptions
+      if (whiteboardSub && typeof whiteboardSub.unsubscribe === 'function') {
+        whiteboardSub.unsubscribe();
+      }
+      if (eventSub && typeof eventSub.unsubscribe === 'function') {
+        eventSub.unsubscribe();
+      }
     };
-  }, []);
+  }, [whiteboardId]);
+
+  // Auto-save changes
+  const debouncedSave = useCallback(
+    debounce((diagramData) => {
+      if (onSave && canEdit) {
+        onSave(diagramData);
+      }
+    }, 2000),
+    [onSave, canEdit]
+  );
+
+  useEffect(() => {
+    if (nodes.length > 0 || edges.length > 0) {
+      debouncedSave({ nodes, edges });
+    }
+  }, [nodes, edges, debouncedSave]);
+
+  const handleCollaborationEvent = (event) => {
+    switch (event.eventType) {
+      case 'user_join':
+        setConnectedUsers(prev => {
+          const existing = prev.find(u => u.userId === event.userId);
+          if (!existing) {
+            return [...prev, { userId: event.userId, userEmail: event.userEmail }];
+          }
+          return prev;
+        });
+        break;
+      case 'user_leave':
+        setConnectedUsers(prev => prev.filter(u => u.userId !== event.userId));
+        break;
+      case 'cursor_move':
+        // Handle cursor updates for collaborative editing
+        break;
+      default:
+        console.log('Unhandled collaboration event:', event.eventType);
+    }
+  };
 
   // Helper function to generate hash for media data
   const generateMediaHash = (data) => {
@@ -49,6 +161,11 @@ function DiagramApp() {
       return;
     }
 
+    if (!canUseAI) {
+      setError("Only the whiteboard owner can use AI features.");
+      return;
+    }
+
     setIsGenerating(true);
     setError("");
     setLastPrompt(audioData ? "[Voice Command]" : prompt);
@@ -59,31 +176,42 @@ function DiagramApp() {
       let imageData = null;
 
       // If there are nodes, try to capture the minimap
+      let colorContext = "";
       if (nodes.length > 0 && window.captureDiagramMinimap) {
         try {
           setStreamingStatus("Capturing diagram...");
-          const { blob, colorContext } = await window.captureDiagramMinimap();
+          const result = await window.captureDiagramMinimap();
           
-          // Convert blob to base64
-          const reader = new FileReader();
-          imageData = await new Promise((resolve, reject) => {
-            reader.onload = () => resolve(reader.result.split(',')[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-
-          // Check if we've seen this image before
-          const imageHash = generateMediaHash(imageData);
-          if (mediaCache.has(`image_${imageHash}`)) {
-            console.log("Using cached image data");
-            // Backend will handle caching, just send the same data
+          // Handle case where minimap capture returns null
+          if (result && result.blob) {
+            const { blob, colorContext: capturedColorContext } = result;
+            colorContext = capturedColorContext || "";
+            
+            // Convert blob to base64
+            const reader = new FileReader();
+            imageData = await new Promise((resolve, reject) => {
+              reader.onload = () => resolve(reader.result.split(',')[1]);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
           } else {
-            // Store in frontend cache for reference
-            setMediaCache(prev => new Map(prev).set(`image_${imageHash}`, true));
+            console.log("Minimap not available, proceeding without image");
           }
 
-          // Add color context to the prompt
-          prompt = `${colorContext}\n\nUser request: ${prompt}`;
+          // Check if we've seen this image before (only if we have imageData)
+          if (imageData) {
+            const imageHash = generateMediaHash(imageData);
+            if (mediaCache.has(`image_${imageHash}`)) {
+              console.log("Using cached image data");
+            } else {
+              setMediaCache(prev => new Map(prev).set(`image_${imageHash}`, true));
+            }
+          }
+
+          // Add color context to the prompt if available
+          if (colorContext) {
+            prompt = `${colorContext}\n\nUser request: ${prompt}`;
+          }
         } catch (captureError) {
           console.log("Could not capture minimap, proceeding without image:", captureError);
         }
@@ -94,33 +222,46 @@ function DiagramApp() {
         const audioHash = generateMediaHash(audioData);
         if (mediaCache.has(`audio_${audioHash}`)) {
           console.log("Using cached audio data");
-          // Backend will handle caching, just send the same data
         } else {
-          // Store in frontend cache for reference
           setMediaCache(prev => new Map(prev).set(`audio_${audioHash}`, true));
         }
       }
 
       setStreamingStatus("Analyzing with AI...");
 
-      streamingService.streamDiagramEdit(prompt, imageData, existingDiagram, audioData, {
-        onCommand: (command) => {
-          commandProcessor.processCommand(command);
-        },
-        onError: (error) => {
-          setError(
-            error.message || "Failed to update diagram. Please try again."
-          );
-          setIsGenerating(false);
-          setStreamingStatus(null);
-        },
-        onComplete: () => {
-          setIsGenerating(false);
-          setTimeout(() => {
+      // Use the new AI service
+      await aiService.processAIRequest(
+        whiteboardId,
+        prompt,
+        audioData,
+        imageData,
+        existingDiagram,
+        {
+          onCommand: (command) => {
+            commandProcessor.processCommand(command);
+            // Send real-time event for collaboration
+            if (whiteboardId) {
+              aiService.sendWhiteboardEvent(whiteboardId, 'ai_command', {
+                command,
+                timestamp: new Date().toISOString()
+              });
+            }
+          },
+          onError: (error) => {
+            setError(
+              error.message || "Failed to update diagram. Please try again."
+            );
+            setIsGenerating(false);
             setStreamingStatus(null);
-          }, 2000);
-        },
-      });
+          },
+          onComplete: () => {
+            setIsGenerating(false);
+            setTimeout(() => {
+              setStreamingStatus(null);
+            }, 2000);
+          },
+        }
+      );
     } catch (err) {
       setError(err.message || "Failed to update diagram. Please try again.");
       setIsGenerating(false);
@@ -129,11 +270,31 @@ function DiagramApp() {
   };
 
   const handleNodesChange = (updatedNodes) => {
+    if (!canEdit) return; // Prevent editing if user doesn't have permission
+    
     setNodes(updatedNodes);
+    
+    // Send collaboration event for real-time updates
+    if (whiteboardId) {
+      whiteboardService.sendWhiteboardEvent(whiteboardId, 'node_update', {
+        nodes: updatedNodes,
+        timestamp: new Date().toISOString()
+      });
+    }
   };
 
   const handleEdgesChange = (updatedEdges) => {
+    if (!canEdit) return; // Prevent editing if user doesn't have permission
+    
     setEdges(updatedEdges);
+    
+    // Send collaboration event for real-time updates
+    if (whiteboardId) {
+      whiteboardService.sendWhiteboardEvent(whiteboardId, 'edge_update', {
+        edges: updatedEdges,
+        timestamp: new Date().toISOString()
+      });
+    }
   };
 
   const clearDiagram = () => {
@@ -173,9 +334,38 @@ function DiagramApp() {
           zIndex: 1000,
         }}
       >
-        <h1 style={{ margin: 0, fontSize: "20px", color: "#333" }}>
-          Diagram Builder
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <h1 style={{ margin: 0, fontSize: "20px", color: "#333" }}>
+            Diagram Builder
+          </h1>
+          {connectedUsers.length > 0 && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              background: '#e3f2fd',
+              padding: '0.25rem 0.75rem',
+              borderRadius: '12px',
+              fontSize: '0.8rem',
+              color: '#1976d2'
+            }}>
+              <span>👥</span>
+              <span>{connectedUsers.length + 1} online</span>
+            </div>
+          )}
+          {!canUseAI && (
+            <div style={{
+              background: '#fff3cd',
+              color: '#856404',
+              padding: '0.25rem 0.75rem',
+              borderRadius: '12px',
+              fontSize: '0.8rem',
+              border: '1px solid #ffeaa7'
+            }}>
+              {canEdit ? '✏️ Editor Mode' : '👀 View Only'}
+            </div>
+          )}
+        </div>
         
         {/* Streaming Status */}
         {streamingStatus && (
@@ -270,6 +460,8 @@ function DiagramApp() {
               onGenerate={handleGenerate}
               isGenerating={isGenerating}
               hasExistingDiagram={nodes.length > 0}
+              disabled={!canUseAI}
+              disabledMessage={!canUseAI ? "Only the whiteboard owner can use AI features" : undefined}
             />
 
             {error && (

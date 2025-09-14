@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "npx ampx sandbox",
+    "deploy:prod": "npx ampx pipeline-deploy --branch main",
+    "generate": "npx ampx generate outputs --profile default",
+    "delete": "npx ampx sandbox delete"
   },
   "repository": {
     "type": "git",
@@ -27,6 +31,10 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "aws-amplify": "^6.15.6"
+    "@google/generative-ai": "^0.24.1",
+    "aws-amplify": "^6.15.6",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0"
   }
 }
