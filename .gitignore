@@ -9,7 +9,12 @@ node_modules/
 /coverage
 
 # production
-/build
+build/
+dist/
+out/
+.next/
+.nuxt/
+frontend/build/
 
 # environment variables
 .env
