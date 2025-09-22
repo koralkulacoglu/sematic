@@ -16,7 +16,7 @@
 #### Step 2: Connect GitHub Repository
 1. Choose **"GitHub"** as source
 2. Authorize AWS Amplify to access your GitHub account
-3. Select repository: `koralkulacoglu/hack-the-north-2025`
+3. Select repository: `koralkulacoglu/sematic`
 4. Select branch: `main` (or your deployment branch)
 
 #### Step 3: Configure Build Settings
@@ -44,7 +44,7 @@ applications:
 ```
 
 #### Step 4: Advanced Settings
-- **App name**: `hack-the-north-2025-frontend`
+- **App name**: `sematic-frontend`
 - **Environment**: `production`
 - **Build timeout**: 15 minutes
 - **Node version**: 18
@@ -78,9 +78,9 @@ If you have AWS CLI configured with proper permissions:
 ```bash
 # Create Amplify app
 aws amplify create-app \
-  --name "hack-the-north-2025-frontend" \
+  --name "sematic-frontend" \
   --description "AI-Powered Diagram Builder Frontend" \
-  --repository "https://github.com/koralkulacoglu/hack-the-north-2025" \
+  --repository "https://github.com/koralkulacoglu/sematic" \
   --platform "WEB" \
   --region us-west-2
 

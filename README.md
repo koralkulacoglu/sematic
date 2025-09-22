@@ -32,7 +32,7 @@ A collaborative whiteboard application with AI-powered diagram generation using 
 1. **Clone the repository**
    ```bash
    git clone <your-repo-url>
-   cd hack-the-north-2025
+   cd sematic
    ```
 
 2. **Install dependencies**

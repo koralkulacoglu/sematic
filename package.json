@@ -1,5 +1,5 @@
 {
-  "name": "hack-the-north-2025",
+  "name": "sematic",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -11,15 +11,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/koralkulacoglu/hack-the-north-2025.git"
+    "url": "git+https://github.com/koralkulacoglu/sematic.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/koralkulacoglu/hack-the-north-2025/issues"
+    "url": "https://github.com/koralkulacoglu/sematic/issues"
   },
-  "homepage": "https://github.com/koralkulacoglu/hack-the-north-2025#readme",
+  "homepage": "https://github.com/koralkulacoglu/sematic#readme",
   "description": "",
   "devDependencies": {
     "@aws-amplify/backend": "^1.16.1",
