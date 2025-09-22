@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { DiagramAnimation } from './DiagramAnimation';
@@ -50,8 +51,18 @@ function HeroSection({ onGetStarted, onSignIn }) {
     <section className="py-20 lg:py-32 relative overflow-hidden">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-8">
-            <div className="space-y-4">
+          <motion.div 
+            className="space-y-8"
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            <motion.div 
+              className="space-y-4"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
               <h1 className="text-4xl lg:text-6xl font-bold text-balance leading-tight">
                 Turn conversations into <span className="text-primary">system diagrams</span> automatically
               </h1>
@@ -59,29 +70,44 @@ function HeroSection({ onGetStarted, onSignIn }) {
                 Sematic listens to your meetings and instantly generates comprehensive system architecture diagrams,
                 accelerating your development process from ideation to implementation.
               </p>
-            </div>
+            </motion.div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <motion.div 
+              className="flex flex-col sm:flex-row gap-4"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+            >
               <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={onGetStarted}>
                 Get Started
               </Button>
-            </div>
+            </motion.div>
 
-            <div className="flex items-center space-x-6 text-sm text-muted-foreground">
+            <motion.div 
+              className="flex items-center space-x-6 text-sm text-muted-foreground"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+            >
               <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
                 <span>Real-time processing</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
                 <span>Enterprise ready</span>
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
-          <div className="relative">
+          <motion.div 
+            className="relative"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+          >
             <DiagramAnimation />
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>
@@ -115,15 +141,44 @@ function StatsSection() {
   return (
     <section className="py-16 border-y border-border/50">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+        <motion.div 
+          className="grid grid-cols-2 lg:grid-cols-4 gap-8"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          viewport={{ once: true, margin: "-100px" }}
+        >
           {stats.map((stat, index) => (
-            <div key={index} className="text-center space-y-2">
-              <div className="text-2xl lg:text-3xl font-bold text-primary">{stat.value}</div>
+            <motion.div 
+              key={index} 
+              className="text-center space-y-2"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ 
+                duration: 0.6, 
+                delay: index * 0.1,
+                ease: "easeOut" 
+              }}
+              viewport={{ once: true, margin: "-50px" }}
+            >
+              <motion.div 
+                className="text-2xl lg:text-3xl font-bold text-primary"
+                initial={{ scale: 0.8 }}
+                whileInView={{ scale: 1 }}
+                transition={{ 
+                  duration: 0.5, 
+                  delay: index * 0.1 + 0.2,
+                  ease: "easeOut"
+                }}
+                viewport={{ once: true }}
+              >
+                {stat.value}
+              </motion.div>
               <div className="text-sm text-muted-foreground">{stat.label}</div>
               <div className="text-xs text-muted-foreground/70">{stat.company}</div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   )
@@ -166,27 +221,59 @@ function FeaturesSection() {
   return (
     <section id="features" className="py-20">
       <div className="container mx-auto px-4">
-        <div className="text-center space-y-4 mb-16">
+        <motion.div 
+          className="text-center space-y-4 mb-16"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          viewport={{ once: true, margin: "-100px" }}
+        >
           <h2 className="text-3xl lg:text-4xl font-bold text-balance">Accelerate your development process</h2>
           <p className="text-xl text-muted-foreground text-pretty max-w-2xl mx-auto">
             From meeting to implementation in minutes, not hours. Let AI handle the documentation while you focus on
             building.
           </p>
-        </div>
+        </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
-            <Card key={index} className="bg-card border-border hover:border-primary/50 transition-colors">
-              <CardHeader>
-                <div className="text-3xl mb-2">{feature.icon}</div>
-                <CardTitle className="text-xl">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-muted-foreground leading-relaxed">
-                  {feature.description}
-                </CardDescription>
-              </CardContent>
-            </Card>
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ 
+                duration: 0.6, 
+                delay: index * 0.1,
+                ease: "easeOut" 
+              }}
+              viewport={{ once: true, margin: "-50px" }}
+              whileHover={{ y: -5, transition: { duration: 0.3 } }}
+            >
+              <Card className="bg-card border-border hover:border-primary/50 transition-colors h-full">
+                <CardHeader>
+                  <motion.div 
+                    className="text-3xl mb-2"
+                    initial={{ scale: 0 }}
+                    whileInView={{ scale: 1 }}
+                    transition={{ 
+                      duration: 0.5, 
+                      delay: index * 0.1 + 0.2,
+                      type: "spring",
+                      stiffness: 200
+                    }}
+                    viewport={{ once: true }}
+                  >
+                    {feature.icon}
+                  </motion.div>
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-muted-foreground leading-relaxed">
+                    {feature.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -195,95 +282,150 @@ function FeaturesSection() {
 }
 
 function PricingSection({ onGetStarted }) {
+  const pricingPlans = [
+    {
+      name: "Starter",
+      price: "Free",
+      features: ["Up to 5 meetings/month", "Basic diagram generation", "Export to PNG/SVG"],
+      button: "Get Started",
+      popular: false
+    },
+    {
+      name: "Professional", 
+      price: "$29",
+      priceNote: "/month",
+      features: ["Unlimited meetings", "Advanced AI models", "Real-time collaboration", "API access"],
+      button: "Start Free Trial",
+      popular: true
+    },
+    {
+      name: "Enterprise",
+      price: "Custom",
+      features: ["Custom integrations", "On-premise deployment", "Dedicated support", "SLA guarantees"],
+      button: "Contact Sales",
+      popular: false,
+      variant: "outline"
+    }
+  ];
+
   return (
     <section id="pricing" className="py-24 bg-muted/50">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
+        <motion.div 
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          viewport={{ once: true, margin: "-100px" }}
+        >
           <h2 className="text-4xl font-bold mb-4">Simple, Transparent Pricing</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Choose the plan that fits your team's needs. Start free and scale as you grow.
           </p>
-        </div>
+        </motion.div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          <div className="bg-background rounded-lg p-8 border border-border">
-            <h3 className="text-2xl font-bold mb-4">Starter</h3>
-            <div className="text-4xl font-bold mb-6">Free</div>
-            <ul className="space-y-3 mb-8">
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
-                Up to 5 meetings/month
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
-                Basic diagram generation
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
-                Export to PNG/SVG
-              </li>
-            </ul>
-            <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" onClick={onGetStarted}>
-              Get Started
-            </Button>
-          </div>
-
-          <div className="bg-background rounded-lg p-8 border-2 border-primary relative">
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm">
-              Most Popular
-            </div>
-            <h3 className="text-2xl font-bold mb-4">Professional</h3>
-            <div className="text-4xl font-bold mb-6">
-              $29<span className="text-lg text-muted-foreground">/month</span>
-            </div>
-            <ul className="space-y-3 mb-8">
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
-                Unlimited meetings
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
-                Advanced AI models
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
-                Real-time collaboration
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
-                API access
-              </li>
-            </ul>
-            <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" onClick={onGetStarted}>
-              Start Free Trial
-            </Button>
-          </div>
-
-          <div className="bg-background rounded-lg p-8 border border-border">
-            <h3 className="text-2xl font-bold mb-4">Enterprise</h3>
-            <div className="text-4xl font-bold mb-6">Custom</div>
-            <ul className="space-y-3 mb-8">
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
-                Custom integrations
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
-                On-premise deployment
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
-                Dedicated support
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
-                SLA guarantees
-              </li>
-            </ul>
-            <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/10">
-              Contact Sales
-            </Button>
-          </div>
+          {pricingPlans.map((plan, index) => (
+            <motion.div
+              key={index}
+              className={`bg-background rounded-lg p-8 border ${plan.popular ? 'border-2 border-primary' : 'border-border'} relative`}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ 
+                duration: 0.6, 
+                delay: index * 0.1,
+                ease: "easeOut" 
+              }}
+              viewport={{ once: true, margin: "-50px" }}
+              whileHover={{ 
+                y: plan.popular ? 0 : -10, 
+                transition: { duration: 0.3 },
+                scale: plan.popular ? 1 : 1.02
+              }}
+            >
+              {plan.popular && (
+                <motion.div 
+                  className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm"
+                  initial={{ opacity: 0, scale: 0 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  transition={{ 
+                    duration: 0.5, 
+                    delay: index * 0.1 + 0.3,
+                    type: "spring",
+                    stiffness: 200
+                  }}
+                  viewport={{ once: true }}
+                >
+                  Most Popular
+                </motion.div>
+              )}
+              
+              <motion.h3 
+                className="text-2xl font-bold mb-4"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
+                viewport={{ once: true }}
+              >
+                {plan.name}
+              </motion.h3>
+              
+              <motion.div 
+                className="text-4xl font-bold mb-6"
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ 
+                  duration: 0.5, 
+                  delay: index * 0.1 + 0.3,
+                  type: "spring",
+                  stiffness: 200
+                }}
+                viewport={{ once: true }}
+              >
+                {plan.price}{plan.priceNote && <span className="text-lg text-muted-foreground">{plan.priceNote}</span>}
+              </motion.div>
+              
+              <ul className="space-y-3 mb-8">
+                {plan.features.map((feature, featureIndex) => (
+                  <motion.li 
+                    key={featureIndex}
+                    className="flex items-center"
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ 
+                      duration: 0.5, 
+                      delay: index * 0.1 + 0.4 + featureIndex * 0.1 
+                    }}
+                    viewport={{ once: true }}
+                  >
+                    <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
+                    {feature}
+                  </motion.li>
+                ))}
+              </ul>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  duration: 0.5, 
+                  delay: index * 0.1 + 0.6 
+                }}
+                viewport={{ once: true }}
+              >
+                <Button 
+                  className={plan.variant === 'outline' 
+                    ? "w-full border-primary text-primary hover:bg-primary/10" 
+                    : "w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                  }
+                  variant={plan.variant || "default"}
+                  onClick={onGetStarted}
+                >
+                  {plan.button}
+                </Button>
+              </motion.div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>
@@ -291,77 +433,105 @@ function PricingSection({ onGetStarted }) {
 }
 
 function DocsSection() {
+  const docItems = [
+    {
+      title: "Quick Start Guide",
+      description: "Get up and running with Sematic in under 5 minutes. Connect your meeting platform and start generating diagrams.",
+      link: "Read Guide →"
+    },
+    {
+      title: "API Reference", 
+      description: "Complete API documentation with examples for integrating Sematic into your existing tools and workflows.",
+      link: "View API Docs →"
+    },
+    {
+      title: "Integrations",
+      description: "Connect Sematic with Zoom, Teams, Slack, Figma, and dozens of other tools your team already uses.",
+      link: "Browse Integrations →"
+    },
+    {
+      title: "Best Practices",
+      description: "Learn how top engineering teams use Sematic to streamline their design process and improve collaboration.",
+      link: "Read Best Practices →"
+    },
+    {
+      title: "Troubleshooting",
+      description: "Common issues and solutions to help you get the most out of Sematic's AI-powered diagram generation.",
+      link: "Get Help →"
+    },
+    {
+      title: "Community",
+      description: "Join our community of developers and designers sharing tips, templates, and use cases.",
+      link: "Join Community →"
+    }
+  ];
+
   return (
     <section id="docs" className="py-24">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
+        <motion.div 
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          viewport={{ once: true, margin: "-100px" }}
+        >
           <h2 className="text-4xl font-bold mb-4">Documentation & Resources</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Everything you need to get started with Sematic and integrate it into your workflow.
           </p>
-        </div>
+        </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          <div className="bg-card rounded-lg p-6 border border-border hover:border-primary transition-colors">
-            <h3 className="text-xl font-bold mb-3">Quick Start Guide</h3>
-            <p className="text-muted-foreground mb-4">
-              Get up and running with Sematic in under 5 minutes. Connect your meeting platform and start generating
-              diagrams.
-            </p>
-            <button className="text-primary hover:text-primary/80 font-medium text-left">
-              Read Guide →
-            </button>
-          </div>
-
-          <div className="bg-card rounded-lg p-6 border border-border hover:border-primary transition-colors">
-            <h3 className="text-xl font-bold mb-3">API Reference</h3>
-            <p className="text-muted-foreground mb-4">
-              Complete API documentation with examples for integrating Sematic into your existing tools and workflows.
-            </p>
-            <button className="text-primary hover:text-primary/80 font-medium text-left">
-              View API Docs →
-            </button>
-          </div>
-
-          <div className="bg-card rounded-lg p-6 border border-border hover:border-primary transition-colors">
-            <h3 className="text-xl font-bold mb-3">Integrations</h3>
-            <p className="text-muted-foreground mb-4">
-              Connect Sematic with Zoom, Teams, Slack, Figma, and dozens of other tools your team already uses.
-            </p>
-            <button className="text-primary hover:text-primary/80 font-medium text-left">
-              Browse Integrations →
-            </button>
-          </div>
-
-          <div className="bg-card rounded-lg p-6 border border-border hover:border-primary transition-colors">
-            <h3 className="text-xl font-bold mb-3">Best Practices</h3>
-            <p className="text-muted-foreground mb-4">
-              Learn how top engineering teams use Sematic to streamline their design process and improve collaboration.
-            </p>
-            <button className="text-primary hover:text-primary/80 font-medium text-left">
-              Read Best Practices →
-            </button>
-          </div>
-
-          <div className="bg-card rounded-lg p-6 border border-border hover:border-primary transition-colors">
-            <h3 className="text-xl font-bold mb-3">Troubleshooting</h3>
-            <p className="text-muted-foreground mb-4">
-              Common issues and solutions to help you get the most out of Sematic's AI-powered diagram generation.
-            </p>
-            <button className="text-primary hover:text-primary/80 font-medium text-left">
-              Get Help →
-            </button>
-          </div>
-
-          <div className="bg-card rounded-lg p-6 border border-border hover:border-primary transition-colors">
-            <h3 className="text-xl font-bold mb-3">Community</h3>
-            <p className="text-muted-foreground mb-4">
-              Join our community of developers and designers sharing tips, templates, and use cases.
-            </p>
-            <button className="text-primary hover:text-primary/80 font-medium text-left">
-              Join Community →
-            </button>
-          </div>
+          {docItems.map((item, index) => (
+            <motion.div
+              key={index}
+              className="bg-card rounded-lg p-6 border border-border hover:border-primary transition-colors"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ 
+                duration: 0.6, 
+                delay: index * 0.1,
+                ease: "easeOut" 
+              }}
+              viewport={{ once: true, margin: "-50px" }}
+              whileHover={{ 
+                y: -5, 
+                transition: { duration: 0.3 }
+              }}
+            >
+              <motion.h3 
+                className="text-xl font-bold mb-3"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
+                viewport={{ once: true }}
+              >
+                {item.title}
+              </motion.h3>
+              
+              <motion.p 
+                className="text-muted-foreground mb-4"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: index * 0.1 + 0.3 }}
+                viewport={{ once: true }}
+              >
+                {item.description}
+              </motion.p>
+              
+              <motion.button 
+                className="text-primary hover:text-primary/80 font-medium text-left"
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 + 0.4 }}
+                viewport={{ once: true }}
+                whileHover={{ x: 5, transition: { duration: 0.2 } }}
+              >
+                {item.link}
+              </motion.button>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>
