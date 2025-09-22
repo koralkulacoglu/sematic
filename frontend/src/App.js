@@ -4,6 +4,7 @@ import './App.css';
 import './amplify-config'; // Initialize Amplify
 
 import LandingPage from './components/LandingPage';
+import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import WhiteboardEditor from './components/WhiteboardEditor';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -14,8 +15,9 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          {/* Public route - Landing page */}
+          {/* Public routes */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
           
           {/* Protected routes */}
           <Route 

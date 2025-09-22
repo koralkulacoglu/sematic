@@ -61,8 +61,9 @@ const DiagramCanvas = ({
   const prevEdgesRef = useRef();
   const timeoutRefs = useRef([]); // Cleanup timeouts on unmount
   useEffect(() => {
+    const timeouts = timeoutRefs.current;
     return () => {
-      timeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
+      timeouts.forEach((timeout) => clearTimeout(timeout));
     };
   }, []);
 

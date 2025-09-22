@@ -35,8 +35,6 @@ function DiagramApp({
   const [commandProcessor, setCommandProcessor] = useState(null);
   const [mediaCache, setMediaCache] = useState(new Map());
   const [connectedUsers, setConnectedUsers] = useState([]);
-  const [subscription, setSubscription] = useState(null);
-  const [eventSubscription, setEventSubscription] = useState(null);
 
   // Initialize command processor
   useEffect(() => {
@@ -81,8 +79,6 @@ function DiagramApp({
       }
     );
 
-    setSubscription(whiteboardSub);
-    setEventSubscription(eventSub);
 
     // Send user join event
     whiteboardService.sendWhiteboardEvent(whiteboardId, 'user_join', {
@@ -106,6 +102,7 @@ function DiagramApp({
   }, [whiteboardId]);
 
   // Auto-save changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedSave = useCallback(
     debounce((diagramData) => {
       if (onSave && canEdit) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DiagramApp from '../DiagramApp';
 import whiteboardService from '../services/whiteboardService';
@@ -13,16 +13,7 @@ function WhiteboardEditor() {
   const [canUseAI, setCanUseAI] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (whiteboardId) {
-      loadWhiteboard();
-    } else {
-      // Create new whiteboard if no ID provided
-      createNewWhiteboard();
-    }
-  }, [whiteboardId]);
-
-  const loadWhiteboard = async () => {
+  const loadWhiteboard = useCallback(async () => {
     try {
       setLoading(true);
       const wb = await whiteboardService.getWhiteboard(whiteboardId);
@@ -41,9 +32,9 @@ function WhiteboardEditor() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [whiteboardId]);
 
-  const createNewWhiteboard = async () => {
+  const createNewWhiteboard = useCallback(async () => {
     try {
       setLoading(true);
       const newWhiteboard = await whiteboardService.createWhiteboard('Untitled Whiteboard');
@@ -62,7 +53,16 @@ function WhiteboardEditor() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    if (whiteboardId) {
+      loadWhiteboard();
+    } else {
+      // Create new whiteboard if no ID provided
+      createNewWhiteboard();
+    }
+  }, [whiteboardId, createNewWhiteboard, loadWhiteboard]);
 
   const handleSaveWhiteboard = async (diagramData) => {
     if (!whiteboard || !canEdit) return;
