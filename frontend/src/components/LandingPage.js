@@ -20,7 +20,6 @@ function Header({ onSignIn, onGetStarted }) {
           <img src="/sematic_2.png" alt="Sematic" className="w-8 h-8" />
           <span className="text-xl font-bold text-foreground">Sematic</span>
         </div>
-
         <nav className="hidden md:flex items-center space-x-8">
           <button onClick={() => scrollToSection('features')} className="text-muted-foreground hover:text-foreground transition-colors">
             Features
@@ -32,7 +31,6 @@ function Header({ onSignIn, onGetStarted }) {
             Docs
           </button>
         </nav>
-
         <div className="flex items-center space-x-4">
           <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={onSignIn}>
             Sign In
