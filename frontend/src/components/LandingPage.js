@@ -64,11 +64,11 @@ function HeroSection({ onGetStarted, onSignIn }) {
               transition={{ duration: 0.8, delay: 0.2 }}
             >
               <h1 className="text-4xl lg:text-6xl font-bold text-balance leading-tight">
-                Turn conversations into <span className="text-primary">system diagrams</span> automatically
+                Transform meetings into <span className="text-primary">architecture diagrams</span> instantly
               </h1>
               <p className="text-xl text-muted-foreground text-pretty leading-relaxed">
-                Sematic listens to your meetings and instantly generates comprehensive system architecture diagrams,
-                accelerating your development process from ideation to implementation.
+                Stop drawing diagrams by hand. Sematic uses AI to listen to your conversations and automatically 
+                create professional system architecture diagrams in real-time.
               </p>
             </motion.div>
 
