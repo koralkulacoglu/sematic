@@ -119,22 +119,18 @@ function StatsSection() {
     {
       value: "10x faster",
       label: "diagram creation",
-      company: "TechCorp",
     },
     {
       value: "95% accuracy",
       label: "in system mapping",
-      company: "DevTeam",
     },
     {
       value: "50% reduction",
       label: "in planning time",
-      company: "StartupXYZ",
     },
     {
       value: "99.9% uptime",
       label: "enterprise reliability",
-      company: "BigCorp",
     },
   ]
 
@@ -175,7 +171,6 @@ function StatsSection() {
                 {stat.value}
               </motion.div>
               <div className="text-sm text-muted-foreground">{stat.label}</div>
-              <div className="text-xs text-muted-foreground/70">{stat.company}</div>
             </motion.div>
           ))}
         </motion.div>
